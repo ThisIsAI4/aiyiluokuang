@@ -1,0 +1,33 @@
+{
+  "name": "chathub-replica",
+  "version": "1.0.0",
+  "description": "Aggregate mainstream AI chat platforms into one panel — full functional replica of Simple Chat Hub.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build:priority": "node scripts/build-priority.mjs",
+    "build": "npm run build:priority && tsc -b --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "antd": "^5.21.5",
+    "classnames": "^2.5.1",
+    "i18next": "^23.16.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-i18next": "^15.1.1",
+    "uuid": "^11.0.3",
+    "zustand": "^5.0.1"
+  },
+  "devDependencies": {
+    "@crxjs/vite-plugin": "2.0.0-beta.28",
+    "@types/chrome": "^0.0.279",
+    "@types/node": "^25.9.1",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@types/uuid": "^10.0.0",
+    "@vitejs/plugin-react": "^4.3.3",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10"
+  }
+}
