@@ -24,6 +24,11 @@ export default defineConfig({
     rollupOptions: {
       input: {
         chatHub: path.resolve(__dirname, 'chatHub.html'),
+        extractor: path.resolve(__dirname, 'src/contentScripts/extractor.ts'),
+      },
+      output: {
+        entryFileNames: (chunk) =>
+          chunk.name === 'extractor' ? 'extractor.js' : 'assets/[name]-[hash].js',
       },
     },
   },

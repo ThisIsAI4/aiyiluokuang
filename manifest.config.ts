@@ -25,12 +25,16 @@ export default defineManifest({
     type: 'module',
   },
   content_scripts: [],
+  permissions: ['storage', 'declarativeNetRequest', 'scripting', 'tabs', 'contextMenus', 'notifications'],
+  host_permissions: ['<all_urls>', 'file:///*'],
   web_accessible_resources: [
     defineDynamicResource({
       matches: ['http://*/*', 'https://*/*'],
       use_dynamic_url: false,
     }),
+    {
+      resources: ['extractor.js', 'pdf.worker.min.mjs', 'assets/*'],
+      matches: ['<all_urls>', 'file:///*'],
+    },
   ],
-  permissions: ['storage', 'declarativeNetRequest', 'scripting', 'tabs'],
-  host_permissions: ['<all_urls>'],
 });

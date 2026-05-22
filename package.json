@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build:priority": "node scripts/build-priority.mjs",
-    "build": "npm run build:priority && tsc -b --noEmit && vite build",
+    "build:pdf-worker": "node scripts/copy-pdf-worker.mjs",
+    "build": "npm run build:priority && npm run build:pdf-worker && tsc -b --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
