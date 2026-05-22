@@ -1,6 +1,7 @@
 import { ConfigManager } from './platforms/configManager';
 import { ensureClientId } from './utils/storage';
 import { PROTOCOL_SOURCE } from './utils/constants';
+import { setPending } from './services/contextPayload';
 import type { ChatAppConfig } from './types';
 // MAIN-world priority script is pre-bundled by scripts/build-priority.mjs as an IIFE.
 // Vite copies public/priority.js verbatim to dist/priority.js — accessible from extension root.
@@ -116,6 +117,20 @@ async function registerContentScripts() {
 
 chrome.runtime.onInstalled.addListener(() => {
   ensureClientId().catch(console.warn);
+  try {
+    chrome.contextMenus.create({
+      id: 'chathub-send-selection',
+      title: '发到 ChatHub：%s',
+      contexts: ['selection'],
+    });
+    chrome.contextMenus.create({
+      id: 'chathub-summarize-page',
+      title: '用 ChatHub 总结当前页/PDF',
+      contexts: ['page', 'frame'],
+    });
+  } catch (err) {
+    console.warn('[background] contextMenus.create failed', err);
+  }
 });
 
 chrome.action.onClicked.addListener(() => {
@@ -157,6 +172,69 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       url => sendResponse({ url }),
     );
     return true;
+  }
+});
+
+const EXTRACTOR_URL = chrome.runtime.getURL('extractor.js');
+
+async function runExtractor(tabId: number, kind: 'selection' | 'auto') {
+  const [{ result }] = await chrome.scripting.executeScript({
+    target: { tabId },
+    world: 'ISOLATED',
+    func: async (extractorUrl: string, k: 'selection' | 'auto') => {
+      const mod = await import(/* @vite-ignore */ extractorUrl);
+      return mod.run(k);
+    },
+    args: [EXTRACTOR_URL, kind],
+  });
+  return result as Awaited<ReturnType<typeof import('./contentScripts/extractor').run>>;
+}
+
+async function openOrFocusChatHub() {
+  const url = chrome.runtime.getURL('chatHub.html');
+  const tabs = await chrome.tabs.query({});
+  const existing = tabs.find(t => t.url?.startsWith(url));
+  if (existing?.id !== undefined) {
+    await chrome.tabs.update(existing.id, { active: true });
+    if (existing.windowId !== undefined) await chrome.windows.update(existing.windowId, { focused: true });
+    await chrome.tabs.reload(existing.id);
+    return;
+  }
+  await chrome.tabs.create({ url });
+}
+
+function notify(title: string, msg: string) {
+  try {
+    chrome.notifications.create({
+      type: 'basic',
+      iconUrl: chrome.runtime.getURL('public/icons/logo-128.png'),
+      title,
+      message: msg,
+    });
+  } catch {
+    console.warn('[background] notify failed', title, msg);
+  }
+}
+
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+  if (!tab?.id) return;
+  const kind: 'selection' | 'auto' = info.menuItemId === 'chathub-send-selection' ? 'selection' : 'auto';
+  try {
+    const result = await runExtractor(tab.id, kind);
+    if (!result || 'error' in result) {
+      const errMsg = (result && 'error' in result) ? result.error : '内容提取失败';
+      if (tab.url?.startsWith('file://') && /Cannot access|file:\/\//.test(errMsg)) {
+        notify('ChatHub', '本地 PDF 需在 chrome://extensions 启用「允许访问文件 URL」');
+      } else {
+        notify('ChatHub', errMsg);
+      }
+      return;
+    }
+    await setPending(result);
+    await openOrFocusChatHub();
+  } catch (err) {
+    console.error('[background] extractor dispatch failed', err);
+    notify('ChatHub', '内容提取失败：' + (err instanceof Error ? err.message : 'unknown'));
   }
 });
 
