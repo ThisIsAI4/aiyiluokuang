@@ -203,6 +203,10 @@ if (isInExtensionFrame()) {
         return null;
       case 'getLocationHref':
         return window.location.href;
+      case 'harvestSelection': {
+        const text = window.getSelection()?.toString() ?? '';
+        return { text };
+      }
       case 'captureStart':
         return (await captureStart()) ?? null;
       case 'triggerScroll':
