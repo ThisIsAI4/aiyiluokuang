@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button, message } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { RightOutlined } from '@ant-design/icons';
 import { useStore } from 'zustand';
 import { chainStore } from '../services/chainStore';
@@ -9,6 +10,7 @@ type Props = {
 };
 
 export function AnswerHarvestButton({ platformId }: Props) {
+  const { t } = useTranslation();
   const chain = useStore(chainStore);
   if (chain.status !== 'waiting_user') return null;
   const currentPlatformId = chain.steps[chain.currentStep]?.platformId;
@@ -25,7 +27,7 @@ export function AnswerHarvestButton({ platformId }: Props) {
         if (err) message.warning(err);
       }}
     >
-      采集选区 → 下一步
+      {t('chain.next')}
     </Button>
   );
 }

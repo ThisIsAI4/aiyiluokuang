@@ -1,5 +1,6 @@
 import React from 'react';
 import { Tag, Tooltip } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { CloseOutlined, FilePdfOutlined, FileTextOutlined, HighlightOutlined } from '@ant-design/icons';
 import type { ContextPayload } from '../services/contextPayload';
 
@@ -15,8 +16,11 @@ type Props = {
 };
 
 export function ContextPreviewChip({ ctx, onDismiss }: Props) {
+  const { t } = useTranslation();
   const preview = ctx.text.slice(0, 500) + (ctx.text.length > 500 ? '…' : '');
   const charLabel = ctx.charCount.toLocaleString();
+  const label = t('contextChip.fromSource', { title: ctx.sourceTitle, chars: charLabel })
+    + (ctx.truncated ? t('contextChip.truncatedSuffix') : '');
   return (
     <Tooltip title={<pre style={{ maxWidth: 480, whiteSpace: 'pre-wrap' }}>{preview}</pre>}>
       <Tag
@@ -29,7 +33,7 @@ export function ContextPreviewChip({ ctx, onDismiss }: Props) {
           chrome.tabs.create({ url: ctx.sourceUrl });
         }}
       >
-        来自 “{ctx.sourceTitle}” · {charLabel} 字{ctx.truncated ? ' · 已截断到 8,000' : ''}
+        {label}
       </Tag>
     </Tooltip>
   );

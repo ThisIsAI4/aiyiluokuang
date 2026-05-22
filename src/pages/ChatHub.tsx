@@ -115,7 +115,7 @@ export default function ChatHubPage() {
     if (!trimmed) return;
     if (chainMode) {
       const steps = chainStore.getState().steps;
-      if (steps.length === 0) { message.warning('请先在「编辑链」里配置链顺序'); return; }
+      if (steps.length === 0) { message.warning(t('chain.needSteps')); return; }
       chainStore.getState().start(trimmed, steps);
       setText('');
       return;
@@ -246,8 +246,8 @@ export default function ChatHubPage() {
           inputValue={text}
           onStartChain={async () => {
             const steps = chainStore.getState().steps;
-            if (steps.length === 0) { message.warning('请先在「编辑链」里配置链顺序'); return; }
-            if (!text.trim()) { message.warning('请先输入起始 prompt'); return; }
+            if (steps.length === 0) { message.warning(t('chain.needSteps')); return; }
+            if (!text.trim()) { message.warning(t('chain.needPrompt')); return; }
             await chainStore.getState().start(text, steps);
             setText('');
           }}
