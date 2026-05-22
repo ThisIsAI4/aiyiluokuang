@@ -10,6 +10,8 @@ export const STORAGE_KEYS = {
   cachedConfig: 'cachedConfig',
   lastWelcomeVersion: 'lastWelcomeVersion',
   promptOptimizationUsage: 'promptOptimizationUsage',
+  pendingContext: 'chathub:pending-context',
+  chainPresets: 'chathub:chain-presets',
 } as const;
 
 export const CHATS_LIMIT = 6;
