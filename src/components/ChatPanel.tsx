@@ -17,6 +17,7 @@ export interface ChatPanelHandle {
   getIframe: () => HTMLIFrameElement | null;
   getAppId: () => string;
   getTitle: () => string;
+  harvestSelection(): Promise<string>;
 }
 
 interface Props {
@@ -71,6 +72,15 @@ const ChatPanel = forwardRef<ChatPanelHandle, Props>(function ChatPanel({ app },
     getIframe() { return iframeRef.current; },
     getAppId() { return app.id; },
     getTitle() { return display.name; },
+    async harvestSelection() {
+      if (!iframeRef.current) return '';
+      try {
+        const reply = await sendToIframe<{ text: string }>(iframeRef.current, 'harvestSelection', undefined, 30000);
+        return reply?.text ?? '';
+      } catch {
+        return '';
+      }
+    },
   }), [app, display, full]);
 
   return (
