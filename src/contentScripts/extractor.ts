@@ -69,5 +69,27 @@ export async function run(req: ExtractorRequest): Promise<ExtractorResult> {
 
 // PDF path filled in Task 6.
 async function extractPdf(): Promise<ExtractorResult> {
-  return { error: 'PDF path not yet implemented' };
+  try {
+    const pdfjs = await import('pdfjs-dist');
+    // Worker URL is provided by the extension; configured in Task 11 via vite copy.
+    pdfjs.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL('pdf.worker.min.mjs');
+
+    const url = window.location.href;
+    const loadingTask = pdfjs.getDocument({ url, isEvalSupported: false });
+    const doc = await loadingTask.promise;
+    const maxPages = Math.min(doc.numPages, 50);
+    const chunks: string[] = [];
+    for (let i = 1; i <= maxPages; i++) {
+      const page = await doc.getPage(i);
+      const content = await page.getTextContent();
+      const pageText = content.items.map((it: any) => ('str' in it ? it.str : '')).join(' ');
+      chunks.push(pageText);
+      if (chunks.join('\n\n').length >= 8000) break;
+    }
+    const text = chunks.join('\n\n').trim();
+    if (!text) return { error: '此 PDF 似乎是扫描件或加密文件，无法提取文本' };
+    return basePayload(text, 'pdf');
+  } catch (err) {
+    return { error: 'PDF 解析失败：' + (err instanceof Error ? err.message : 'unknown') };
+  }
 }
