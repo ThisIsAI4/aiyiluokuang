@@ -16,6 +16,11 @@ import { stitchLongCapture } from '../services/capture';
 import { getSendKeyMode, loadShortcutConfig, formatShortcut, applyShortcutConfig } from '../utils/shortcuts';
 import { addPostMessageListener, sendToParent } from '../utils/messaging';
 import { PROTOCOL_SOURCE } from '../utils/constants';
+import { consumePending, type ContextPayload } from '../services/contextPayload';
+import { ContextPreviewChip } from '../components/ContextPreviewChip';
+import { ChainModeBar } from '../components/ChainModeBar';
+import { AnswerHarvestButton } from '../components/AnswerHarvestButton';
+import { chainStore, bindPanelRegistry } from '../services/chainStore';
 
 declare global {
   interface Window { __SCH_WINDOW__?: Window; }
@@ -39,6 +44,8 @@ export default function ChatHubPage() {
   const [customOpen, setCustomOpen] = useState(false);
   const [shortcutOpen, setShortcutOpen] = useState(false);
   const [capturing, setCapturing] = useState(false);
+  const [pendingCtx, setPendingCtx] = useState<ContextPayload | null>(null);
+  const chainMode = useAppStore(s => s.chainMode);
 
   const inputRef = useRef<any>(null);
   const panelRefs = useRef<Map<string, ChatPanelHandle>>(new Map());
@@ -52,6 +59,31 @@ export default function ChatHubPage() {
 
   useEffect(() => { loadShortcutConfig(); }, []);
   useEffect(() => { applyShortcutConfig(shortcutConfig); }, [shortcutConfig]);
+
+  useEffect(() => {
+    consumePending().then(p => {
+      if (p) {
+        setPendingCtx(p);
+        setText(p.text);
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    bindPanelRegistry({
+      resolve(platformId) {
+        const ref = panelRefs.current.get(platformId);
+        if (!ref) return null;
+        return {
+          sendText: (t: string) => ref.sendText(t),
+          harvestSelection: () => ref.harvestSelection(),
+        };
+      },
+      platformName(platformId) {
+        return bundle?.chatApps.find(a => a.id === platformId)?.id ?? platformId;
+      },
+    });
+  }, [bundle]);
 
   // Page-level listener handles ONLY events that aren't iframe-scoped.
   // Per-panel handlers (in ChatPanel.tsx) own getConfig / contentReady / getShortcutConfig
@@ -81,6 +113,13 @@ export default function ChatHubPage() {
   function handleSubmit() {
     const trimmed = text.trim();
     if (!trimmed) return;
+    if (chainMode) {
+      const steps = chainStore.getState().steps;
+      if (steps.length === 0) { message.warning('请先在「编辑链」里配置链顺序'); return; }
+      chainStore.getState().start(trimmed, steps);
+      setText('');
+      return;
+    }
     panelRefs.current.forEach(p => p.sendText(trimmed));
     setText('');
   }
@@ -188,19 +227,31 @@ export default function ChatHubPage() {
           const app = bundle?.chatApps.find(a => a.id === id);
           if (!app) return null;
           return (
-            <ChatPanel
-              key={id}
-              app={app}
-              ref={el => {
-                if (el) panelRefs.current.set(id, el);
-                else panelRefs.current.delete(id);
-              }}
-            />
+            <div key={id} style={{ position: 'relative' }}>
+              <AnswerHarvestButton platformId={id} />
+              <ChatPanel
+                app={app}
+                ref={el => {
+                  if (el) panelRefs.current.set(id, el);
+                  else panelRefs.current.delete(id);
+                }}
+              />
+            </div>
           );
         })}
       </div>
 
       <div className="chathub-input-bar">
+        <ChainModeBar
+          inputValue={text}
+          onStartChain={async () => {
+            const steps = chainStore.getState().steps;
+            if (steps.length === 0) { message.warning('请先在「编辑链」里配置链顺序'); return; }
+            if (!text.trim()) { message.warning('请先输入起始 prompt'); return; }
+            await chainStore.getState().start(text, steps);
+            setText('');
+          }}
+        />
         <Tabs
           size="small"
           activeKey={options.activeLayoutPresetId}
@@ -225,6 +276,12 @@ export default function ChatHubPage() {
         <Tooltip title={t('app.newChat')}>
           <Button icon={<ReloadOutlined />} onClick={() => panelRefs.current.forEach(p => p.newChat())} />
         </Tooltip>
+        {pendingCtx && (
+          <ContextPreviewChip
+            ctx={pendingCtx}
+            onDismiss={() => { setPendingCtx(null); setText(''); }}
+          />
+        )}
         <Input.TextArea
           ref={inputRef}
           rows={3}
@@ -234,11 +291,11 @@ export default function ChatHubPage() {
           placeholder={t('app.inputPlaceholder')}
           autoSize={{ minRows: 1, maxRows: 6 }}
         />
-        <Tooltip title={t('menu.settings')}>
-          <Button icon={<MenuOutlined />} onClick={() => setSettingsOpen(true)} />
-        </Tooltip>
         <Tooltip title={t('app.send')}>
           <Button type="primary" icon={<SendOutlined />} onClick={handleSubmit} />
+        </Tooltip>
+        <Tooltip title={t('menu.settings')}>
+          <Button icon={<MenuOutlined />} onClick={() => setSettingsOpen(true)} />
         </Tooltip>
       </div>
 
