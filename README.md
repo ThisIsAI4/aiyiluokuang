@@ -44,6 +44,29 @@ A full-functional MV3 replica of [Simple Chat Hub](https://chathub.aipilot.cc/).
 | Languages | 12 | EN + zh-CN (structure ready for 12) |
 | Remote config sync | Pulls from server periodically | Not wired (built-in config only) |
 
+## What's new in v1.1 — Spotlight Update
+
+- **Right-click "Send to ChatHub"** on any selected text (any web page). Prefills the ChatHub input bar; never auto-sends.
+- **Right-click "Summarize this page / PDF"** on any page. Extracts article body via Readability (or the first ~50 pages of a PDF). Prefills the input bar; never auto-sends.
+- **Chain mode (半自动接龙)** in the header: define an ordered chain of platforms (e.g. GPT → Claude → Gemini), send a prompt to step 1, select text in the panel and click "Next ▶" to feed it into step 2. Editable template, named presets, abort/restart controls.
+
+### New permissions
+
+| Permission | Why |
+|---|---|
+| `contextMenus` | To register the two right-click entries. |
+| `notifications` | To surface extraction errors as a one-line toast. |
+| `host_permissions: file:///*` | To summarize local PDFs (opt-in; see below). |
+
+### Local PDF setup (one-time)
+
+1. Open `chrome://extensions/`
+2. Locate "ChatHub Replica" and click "Details"
+3. Toggle **"Allow access to file URLs"** ON
+4. Right-clicking a local PDF should now produce a summary.
+
+Until this is enabled, right-clicking a local PDF shows a one-shot toast pointing here.
+
 ## Build + load
 
 ```bash
