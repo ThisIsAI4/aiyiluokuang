@@ -34,15 +34,20 @@ interface AppStore {
   setShortcutConfig: (cfg: ShortcutConfig) => Promise<void>;
   setCustomConfigs: (cfg: ChatAppConfig[]) => Promise<void>;
   reloadBundle: () => Promise<void>;
+  // Chain mode (F2)
+  chainMode: boolean;
+  setChainMode: (on: boolean) => void;
 }
 
 export const useAppStore = create<AppStore>((set, get) => ({
   ready: false,
+  chainMode: false,
   options: DEFAULT_OPTIONS,
   bundle: null,
   promptLibrary: [],
   shortcutConfig: { sendKeyMode: 'enter', shortcuts: {} },
   customConfigs: [],
+  setChainMode(on) { set({ chainMode: on }); },
 
   async init() {
     const [storedOptions, prompts, shortcut, custom, bundle] = await Promise.all([
