@@ -181,7 +181,7 @@ export default function ChatHubPage() {
     };
     window.addEventListener('keydown', ev, true);
     return () => window.removeEventListener('keydown', ev, true);
-  });
+  }, [bundle, shortcutConfig]);
 
   async function doScreenshot(long: boolean) {
     setCapturing(true);
@@ -215,13 +215,27 @@ export default function ChatHubPage() {
 
   return (
     <div className="chathub-root">
+      <div className="gradient-hairline" />
       <div
         className="chathub-main"
         style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
       >
         {activeAppIds.length === 0 ? (
-          <div style={{ padding: 32 }}>
-            <Button onClick={() => setLayoutOpen(true)} type="primary">Configure layout</Button>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 16,
+            height: '100%',
+            color: 'var(--v-mute)',
+          }}>
+            <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--v-body)' }}>
+              {t('app.noPanels') || 'No panels configured'}
+            </div>
+            <Button type="primary" onClick={() => setLayoutOpen(true)}>
+              {t('app.configureLayout') || 'Configure layout'}
+            </Button>
           </div>
         ) : activeAppIds.map(id => {
           const app = bundle?.chatApps.find(a => a.id === id);
@@ -264,18 +278,7 @@ export default function ChatHubPage() {
             </Tooltip>
           }
         />
-        <Tooltip title={t('app.optimize')}>
-          <Button icon={<ThunderboltOutlined />} onClick={() => handleShortcut('optimizePrompt')} />
-        </Tooltip>
-        <Tooltip title={t('app.capture')}>
-          <Button icon={<CameraOutlined />} loading={capturing} onClick={() => doScreenshot(false)} />
-        </Tooltip>
-        <Tooltip title={t('app.captureLong')}>
-          <Button icon={<ColumnHeightOutlined />} loading={capturing} onClick={() => doScreenshot(true)} />
-        </Tooltip>
-        <Tooltip title={t('app.newChat')}>
-          <Button icon={<ReloadOutlined />} onClick={() => panelRefs.current.forEach(p => p.newChat())} />
-        </Tooltip>
+        <div style={{ flex: 1, minWidth: 8 }} />
         {pendingCtx && (
           <ContextPreviewChip
             ctx={pendingCtx}
@@ -293,6 +296,18 @@ export default function ChatHubPage() {
         />
         <Tooltip title={t('app.send')}>
           <Button type="primary" icon={<SendOutlined />} onClick={handleSubmit} />
+        </Tooltip>
+        <Tooltip title={t('app.capture')}>
+          <Button icon={<CameraOutlined />} loading={capturing} onClick={() => doScreenshot(false)} />
+        </Tooltip>
+        <Tooltip title={t('app.captureLong')}>
+          <Button icon={<ColumnHeightOutlined />} loading={capturing} onClick={() => doScreenshot(true)} />
+        </Tooltip>
+        <Tooltip title={t('app.newChat')}>
+          <Button icon={<ReloadOutlined />} onClick={() => panelRefs.current.forEach(p => p.newChat())} />
+        </Tooltip>
+        <Tooltip title={t('app.optimize')}>
+          <Button icon={<ThunderboltOutlined />} onClick={() => handleShortcut('optimizePrompt')} />
         </Tooltip>
         <Tooltip title={t('menu.settings')}>
           <Button icon={<MenuOutlined />} onClick={() => setSettingsOpen(true)} />

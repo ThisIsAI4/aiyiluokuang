@@ -86,6 +86,7 @@ const ChatPanel = forwardRef<ChatPanelHandle, Props>(function ChatPanel({ app },
   return (
     <div className={`chat-panel${full ? ' fullscreen' : ''}`} data-app-id={app.id}>
       <div className="chat-panel-header">
+        <span className="chat-panel-status-dot" />
         <span className="chat-panel-title" title={display.name}>{display.name}</span>
         <Tooltip title={t('panel.reload')}>
           <Button size="small" type="text" icon={<ReloadOutlined />} onClick={() => setReloadKey(k => k + 1)} />
@@ -112,9 +113,9 @@ const ChatPanel = forwardRef<ChatPanelHandle, Props>(function ChatPanel({ app },
         loading="lazy"
       />
       {!ready && (
-        <div style={{
-          position: 'absolute', inset: 0, background: 'rgba(255,255,255,.4)', pointerEvents: 'none',
-        }} />
+        <div className="chat-panel-loading-overlay">
+          <span style={{ color: 'var(--v-mute)', fontSize: 12 }}>Loading…</span>
+        </div>
       )}
     </div>
   );

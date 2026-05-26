@@ -41,8 +41,65 @@ export default function App() {
   return (
     <ConfigProvider
       theme={{
-        algorithm: isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
-        token: { colorPrimary: options.primaryColor },
+        algorithm: antdTheme.darkAlgorithm,
+        token: {
+          colorPrimary: '#ffffff',
+          colorBgBase: '#010120',
+          colorBgContainer: '#010120',
+          colorBgElevated: '#26263a',
+          colorBorder: '#26263a',
+          colorText: '#ffffff',
+          colorTextSecondary: '#999999',
+          colorTextTertiary: '#a09d96',
+          borderRadius: 4,
+          fontFamily: 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+          fontSize: 13,
+          controlHeight: 32,
+        },
+        components: {
+          Button: {
+            colorPrimaryHover: '#f0f0f5',
+            colorPrimaryActive: '#bdbbff',
+            defaultBg: 'transparent',
+            defaultColor: '#999999',
+          },
+          Input: {
+            colorBgContainer: '#0a0a2a',
+            colorBorder: '#26263a',
+            activeBorderColor: '#ffffff',
+            hoverBorderColor: '#313641',
+          },
+          Select: {
+            colorBgContainer: '#0a0a2a',
+            colorBorder: '#26263a',
+            optionSelectedBg: 'rgba(189, 189, 255, 0.08)',
+            optionActiveBg: 'rgba(189, 189, 255, 0.06)',
+          },
+          Modal: {
+            colorBgElevated: '#010120',
+            headerBg: '#010120',
+            titleColor: '#ffffff',
+          },
+          Drawer: {
+            colorBgElevated: '#010120',
+          },
+          Tabs: {
+            inkBarColor: '#ffffff',
+            itemSelectedColor: '#ffffff',
+            itemHoverColor: '#ffffff',
+            itemColor: '#999999',
+          },
+          Tag: {
+            defaultBg: '#26263a',
+            defaultColor: '#999999',
+          },
+          Dropdown: {
+            colorBgElevated: '#26263a',
+          },
+          List: {
+            colorSplit: '#26263a',
+          },
+        },
       }}
     >
       <AntApp>
