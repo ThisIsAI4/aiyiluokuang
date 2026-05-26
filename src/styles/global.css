@@ -630,7 +630,7 @@ html, body, #app {
 .chat-panel-loading-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(16, 16, 16, 0.6);
+  background: rgba(1, 1, 32, 0.6);
   backdrop-filter: blur(2px);
   pointer-events: none;
   display: flex;
