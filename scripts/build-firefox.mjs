@@ -69,6 +69,8 @@ await esbuild({
   format: 'iife',
   target: 'firefox112',
   platform: 'browser',
+  minify: true,
+  legalComments: 'none',
   plugins: [crxScriptPlugin],
   logLevel: 'info',
 });
@@ -84,6 +86,8 @@ await esbuild({
   format: 'iife',
   target: 'firefox112',
   platform: 'browser',
+  minify: true,
+  legalComments: 'none',
   logLevel: 'info',
 });
 
@@ -94,6 +98,8 @@ await esbuild({
   format: 'iife',
   target: 'firefox112',
   platform: 'browser',
+  minify: true,
+  legalComments: 'none',
   logLevel: 'info',
 });
 
