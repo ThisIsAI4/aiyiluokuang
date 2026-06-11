@@ -2,11 +2,11 @@
 // Build the Firefox extension into dist-firefox/.
 //
 // Pipeline:
-//   1. Pre-builds (priority.js, pdf-worker) — reuse existing scripts
+//   1. esbuild — priority.ts → priority.js (IIFE, Firefox target)
 //   2. Vite build — chatHub.html (React UI) only
 //   3. esbuild — background.ts (IIFE, no ESM)
 //   4. esbuild — content scripts (IIFE)
-//   5. Copy assets (icons, priority.js, pdf.worker) to correct paths
+//   5. Copy assets (icons, pdf.worker) to correct paths
 //   6. Generate manifest.json from manifest.firefox.mjs
 
 import { build as esbuild } from 'esbuild';
@@ -46,11 +46,20 @@ if (existsSync(OUT)) {
 mkdirSync(OUT, { recursive: true });
 
 // ---------------------------------------------------------------------------
-// Step 1: Pre-builds (shared with Chrome build)
+// Step 1: Build priority.ts directly for Firefox (no intermediate public/)
 // ---------------------------------------------------------------------------
-console.log('[firefox] Step 1/6: Pre-builds...');
-execSync('npm run build:priority', { cwd: ROOT, stdio: 'inherit' });
-execSync('npm run build:pdf-worker', { cwd: ROOT, stdio: 'inherit' });
+console.log('[firefox] Step 1/6: Priority script...');
+await esbuild({
+  entryPoints: [path.join(ROOT, 'src/contentScripts/priority.ts')],
+  outfile: path.join(OUT, 'priority.js'),
+  bundle: true,
+  format: 'iife',
+  target: 'firefox112',
+  platform: 'browser',
+  minify: true,
+  legalComments: 'none',
+  logLevel: 'info',
+});
 
 // ---------------------------------------------------------------------------
 // Step 2: Vite build — React UI only
@@ -108,15 +117,13 @@ await esbuild({
 //
 //   dist-firefox/
 //   ├── icons/            ← from public/icons/
-//   ├── priority.js       ← from public/
-//   ├── pdf.worker.min.mjs
+//   ├── pdf.worker.min.mjs ← from node_modules (direct, no public/ intermediate)
 //   ├── assets/           ← Vite output
 //   └── ...
 // ---------------------------------------------------------------------------
 console.log('[firefox] Step 5/6: Copy assets...');
 cpSync(path.join(ROOT, 'public/icons'), path.join(OUT, 'icons'), { recursive: true });
-cpSync(path.join(ROOT, 'public/priority.js'), path.join(OUT, 'priority.js'));
-cpSync(path.join(ROOT, 'public/pdf.worker.min.mjs'), path.join(OUT, 'pdf.worker.min.mjs'));
+cpSync(path.join(ROOT, 'node_modules/pdfjs-dist/build/pdf.worker.min.mjs'), path.join(OUT, 'pdf.worker.min.mjs'));
 
 // ---------------------------------------------------------------------------
 // Step 6: Generate manifest.json from config
