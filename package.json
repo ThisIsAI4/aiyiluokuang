@@ -8,6 +8,7 @@
     "build:priority": "node scripts/build-priority.mjs",
     "build:pdf-worker": "node scripts/copy-pdf-worker.mjs",
     "build": "npm run build:priority && npm run build:pdf-worker && tsc -b --noEmit && vite build",
+    "build:firefox": "node scripts/build-firefox.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
