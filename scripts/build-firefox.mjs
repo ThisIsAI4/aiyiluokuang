@@ -7,14 +7,14 @@
 //   3. esbuild — background.ts (IIFE, no ESM)
 //   4. esbuild — content scripts (IIFE)
 //   5. Copy assets (icons, priority.js, pdf.worker) to correct paths
-//   6. Generate manifest.json
+//   6. Generate manifest.json from manifest.firefox.mjs
 
 import { build as esbuild } from 'esbuild';
 import { execSync } from 'node:child_process';
 import { writeFileSync, mkdirSync, cpSync, existsSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import pkg from '../package.json' with { type: 'json' };
+import manifestConfig from '../manifest.firefox.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const ROOT = path.resolve(path.dirname(__filename), '..');
@@ -113,64 +113,8 @@ cpSync(path.join(ROOT, 'public/priority.js'), path.join(OUT, 'priority.js'));
 cpSync(path.join(ROOT, 'public/pdf.worker.min.mjs'), path.join(OUT, 'pdf.worker.min.mjs'));
 
 // ---------------------------------------------------------------------------
-// Step 6: Generate manifest.json
+// Step 6: Generate manifest.json from config
 // ---------------------------------------------------------------------------
 console.log('[firefox] Step 6/6: Generate manifest.json...');
-const manifest = {
-  manifest_version: 3,
-  name: 'ChatHub Replica',
-  description: pkg.description,
-  version: pkg.version,
-  default_locale: 'en',
-  homepage_url: 'https://github.com/yourname/chathub-replica',
-
-  browser_specific_settings: {
-    gecko: {
-      id: 'chathub-replica@example.com',
-      strict_min_version: '112.0',
-    },
-  },
-
-  icons: {
-    16: 'icons/logo-16.png',
-    32: 'icons/logo-32.png',
-    48: 'icons/logo-48.png',
-    128: 'icons/logo-128.png',
-  },
-  action: {
-    default_icon: 'icons/logo-48.png',
-  },
-  options_page: 'chatHub.html',
-
-  background: {
-    scripts: ['background.js'],
-  },
-
-  content_scripts: [],
-
-  permissions: [
-    'storage',
-    'declarativeNetRequest',
-    'scripting',
-    'tabs',
-    'contextMenus',
-    'notifications',
-  ],
-  host_permissions: ['<all_urls>', 'file:///*'],
-
-  web_accessible_resources: [
-    {
-      resources: [
-        'contentScripts/main.js',
-        'priority.js',
-        'extractor.js',
-        'pdf.worker.min.mjs',
-        'assets/*',
-      ],
-      matches: ['<all_urls>', 'file:///*'],
-    },
-  ],
-};
-
-writeFileSync(path.join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 2));
+writeFileSync(path.join(OUT, 'manifest.json'), JSON.stringify(manifestConfig, null, 2));
 console.log('[firefox] ✓ Build complete →', OUT);

@@ -1,6 +1,9 @@
-import packageJson from './package.json';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const { version, description } = packageJson;
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const pkg = JSON.parse(readFileSync(join(__dirname, 'package.json'), 'utf8'));
 
 /**
  * Firefox MV3 manifest.
@@ -16,8 +19,8 @@ const { version, description } = packageJson;
 export default {
   manifest_version: 3,
   name: 'ChatHub Replica',
-  description,
-  version,
+  description: pkg.description,
+  version: pkg.version,
   default_locale: 'en',
   homepage_url: 'https://github.com/yourname/chathub-replica',
 
@@ -67,4 +70,4 @@ export default {
       matches: ['<all_urls>', 'file:///*'],
     },
   ],
-} satisfies chrome.runtime.ManifestV3;
+};
