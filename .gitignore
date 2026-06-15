@@ -5,3 +5,7 @@ dist/
 .env
 .env.local
 *.log
+.gstack/
+
+# Distribution packages & signing key (DO NOT commit)
+release/
