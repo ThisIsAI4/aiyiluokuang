@@ -79,12 +79,14 @@ async function extractPdf(): Promise<ExtractorResult> {
     const doc = await loadingTask.promise;
     const maxPages = Math.min(doc.numPages, 50);
     const chunks: string[] = [];
+    let totalLen = 0;
     for (let i = 1; i <= maxPages; i++) {
       const page = await doc.getPage(i);
       const content = await page.getTextContent();
-      const pageText = content.items.map((it: any) => ('str' in it ? it.str : '')).join(' ');
+      const pageText = content.items.map(it => ('str' in it ? (it as { str: string }).str : '')).join(' ');
       chunks.push(pageText);
-      if (chunks.join('\n\n').length >= 8000) break;
+      totalLen += pageText.length + (chunks.length > 1 ? 2 : 0);
+      if (totalLen >= MAX_CHARS) break;
     }
     const text = chunks.join('\n\n').trim();
     if (!text) return { error: '此 PDF 似乎是扫描件或加密文件，无法提取文本' };

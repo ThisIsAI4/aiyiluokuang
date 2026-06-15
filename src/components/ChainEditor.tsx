@@ -86,9 +86,9 @@ export function ChainEditor({ open, onClose, initialPlatformIds, initialTemplate
     <Drawer title="编辑接龙链" open={open} onClose={onClose} width={480}
       extra={<Button type="primary" onClick={confirm}>确定</Button>}
     >
-      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+      <Space direction="vertical" style={{ width: '100%', gap: 'var(--v-space-lg)' }}>
         <div>
-          <div style={{ marginBottom: 8 }}>链顺序（从上到下依次接龙）：</div>
+          <div style={{ marginBottom: 'var(--v-space-sm)', color: 'var(--v-body)', fontSize: 13 }}>链顺序（从上到下依次接龙）：</div>
           <List
             bordered
             dataSource={platformIds}

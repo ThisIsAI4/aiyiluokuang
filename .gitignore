@@ -9,3 +9,8 @@ dist/
 
 # Distribution packages & signing key (DO NOT commit)
 release/
+
+# Build artifacts & tool caches
+dist-firefox/
+*.crx
+.codegraph/

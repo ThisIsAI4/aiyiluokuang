@@ -37,7 +37,8 @@ export function sendToParent<R = unknown>(action: string, data?: unknown, timeou
       data,
     };
     const target = window.__SCH_WINDOW__ || window.parent;
-    target.postMessage(payload, '*');
+    const origin = chrome.runtime?.getURL?.('') ? new URL(chrome.runtime.getURL('')).origin : '*';
+    target.postMessage(payload, origin);
   });
 }
 

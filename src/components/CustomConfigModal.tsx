@@ -101,12 +101,21 @@ export default function CustomConfigModal({ open, onClose }: Props) {
             />
           </Form.Item>
           <Form.Item label={t('customConfig.advancedConfig')}>
-            <Alert type="info" showIcon message="JSON: inputActions, sendActions, readyActions, newChatActions, networkRules" />
+            <Alert
+              type="info"
+              showIcon
+              message="JSON: inputActions, sendActions, readyActions, newChatActions, networkRules"
+              style={{
+                background: 'var(--v-surface-2)',
+                border: '1px solid var(--v-hairline)',
+                color: 'var(--v-body)',
+              }}
+            />
             <Input.TextArea
               rows={8}
               value={advanced}
               onChange={e => setAdvanced(e.target.value)}
-              style={{ marginTop: 8, fontFamily: 'monospace' }}
+              style={{ marginTop: 8, fontFamily: 'var(--v-font-mono)' }}
             />
           </Form.Item>
           <Space>

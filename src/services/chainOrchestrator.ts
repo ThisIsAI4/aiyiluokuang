@@ -27,8 +27,9 @@ export interface ChainState {
   template: string;
   history: ChainHistoryEntry[];
   lastError: string | null;
+  _busy: boolean;
 
-  start(originalPrompt: string, steps: ChainStep[]): void;
+  start(originalPrompt: string, steps: ChainStep[]): Promise<void>;
   next(): Promise<void>;
   abort(): void;
   reset(): void;
@@ -43,8 +44,9 @@ export function createChainStore(dispatcher: ChainDispatcher): StoreApi<ChainSta
     template: DEFAULT_CHAIN_TEMPLATE,
     history: [],
     lastError: null,
+    _busy: false,
 
-    start(originalPrompt: string, steps: ChainStep[]) {
+    async start(originalPrompt: string, steps: ChainStep[]) {
       if (steps.length === 0) {
         throw new Error('Cannot start chain with empty steps');
       }
@@ -55,14 +57,20 @@ export function createChainStore(dispatcher: ChainDispatcher): StoreApi<ChainSta
         originalPrompt,
         history: [],
         lastError: null,
+        _busy: false,
       });
       const state = get();
       const firstStep = state.steps[0];
-      dispatcher.sendToPlatform(firstStep.platformId, state.originalPrompt);
+      try {
+        await dispatcher.sendToPlatform(firstStep.platformId, state.originalPrompt);
+      } catch (err) {
+        set({ lastError: err instanceof Error ? err.message : String(err) });
+      }
     },
 
     async next() {
       const state = get();
+      if (state._busy) return;
       if (state.status !== 'waiting_user' && state.status !== 'running') {
         return;
       }
@@ -70,54 +78,66 @@ export function createChainStore(dispatcher: ChainDispatcher): StoreApi<ChainSta
         return;
       }
 
-      const current = state.steps[state.currentStep];
-      const harvested = await dispatcher.harvestFromPlatform(current.platformId);
-      const trimmed = harvested.trim();
-      if (trimmed.length === 0) {
-        set({ lastError: 'Harvested content is empty' });
-        return;
-      }
+      set({ _busy: true, status: 'running', lastError: null });
 
-      const newHistory: ChainHistoryEntry = {
-        platformId: current.platformId,
-        prompt:
-          state.currentStep === 0
-            ? state.originalPrompt
-            : assembleChainPrompt(state.template, {
-                prompt: state.originalPrompt,
-                harvested: state.history[state.history.length - 1]?.harvested ?? '',
-                prevPlatform: dispatcher.platformName(state.history[state.history.length - 1]?.platformId ?? ''),
-              }),
-        harvested: trimmed,
-      };
+      try {
+        const current = state.steps[state.currentStep];
+        const harvested = await dispatcher.harvestFromPlatform(current.platformId);
+        const trimmed = harvested.trim();
+        if (trimmed.length === 0) {
+          set({ lastError: 'Harvested content is empty', status: 'waiting_user', _busy: false });
+          return;
+        }
 
-      const updatedHistory = [...state.history, newHistory];
+        const newHistory: ChainHistoryEntry = {
+          platformId: current.platformId,
+          prompt:
+            state.currentStep === 0
+              ? state.originalPrompt
+              : assembleChainPrompt(state.template, {
+                  prompt: state.originalPrompt,
+                  harvested: state.history[state.history.length - 1]?.harvested ?? '',
+                  prevPlatform: dispatcher.platformName(state.history[state.history.length - 1]?.platformId ?? ''),
+                }),
+          harvested: trimmed,
+        };
 
-      const nextStepIndex = state.currentStep + 1;
-      if (nextStepIndex >= state.steps.length) {
+        const updatedHistory = [...state.history, newHistory];
+
+        const nextStepIndex = state.currentStep + 1;
+        if (nextStepIndex >= state.steps.length) {
+          set({
+            status: 'done',
+            history: updatedHistory,
+            lastError: null,
+            _busy: false,
+          });
+          return;
+        }
+
+        const nextStep = state.steps[nextStepIndex];
+        const assembled = assembleChainPrompt(state.template, {
+          prompt: state.originalPrompt,
+          harvested: trimmed,
+          prevPlatform: dispatcher.platformName(current.platformId),
+        });
+
+        await dispatcher.sendToPlatform(nextStep.platformId, assembled);
+
         set({
-          status: 'done',
+          status: 'waiting_user',
+          currentStep: nextStepIndex,
           history: updatedHistory,
           lastError: null,
+          _busy: false,
         });
-        return;
+      } catch (err) {
+        set({
+          lastError: err instanceof Error ? err.message : String(err),
+          status: 'waiting_user',
+          _busy: false,
+        });
       }
-
-      const nextStep = state.steps[nextStepIndex];
-      const assembled = assembleChainPrompt(state.template, {
-        prompt: state.originalPrompt,
-        harvested: trimmed,
-        prevPlatform: dispatcher.platformName(current.platformId),
-      });
-
-      await dispatcher.sendToPlatform(nextStep.platformId, assembled);
-
-      set({
-        status: 'waiting_user',
-        currentStep: nextStepIndex,
-        history: updatedHistory,
-        lastError: null,
-      });
     },
 
     abort() {
@@ -135,6 +155,7 @@ export function createChainStore(dispatcher: ChainDispatcher): StoreApi<ChainSta
         template: DEFAULT_CHAIN_TEMPLATE,
         history: [],
         lastError: null,
+        _busy: false,
       });
     },
   }));

@@ -12,8 +12,10 @@ import LayoutManager from '../components/LayoutManager';
 import PromptLibraryModal from '../components/PromptLibraryModal';
 import CustomConfigModal from '../components/CustomConfigModal';
 import ShortcutModal from '../components/ShortcutModal';
+import HistoryPopup from '../components/HistoryPopup';
 import { stitchLongCapture } from '../services/capture';
 import { getSendKeyMode, loadShortcutConfig, formatShortcut, applyShortcutConfig } from '../utils/shortcuts';
+import { useInputHistory } from '../utils/useInputHistory';
 import { addPostMessageListener, sendToParent } from '../utils/messaging';
 import { PROTOCOL_SOURCE } from '../utils/constants';
 import { consumePending, type ContextPayload } from '../services/contextPayload';
@@ -38,17 +40,20 @@ export default function ChatHubPage() {
   const removeLayout = useAppStore(s => s.removeLayout);
 
   const [text, setText] = useState('');
+  const [lastSent, setLastSent] = useState('');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [layoutOpen, setLayoutOpen] = useState(false);
   const [promptOpen, setPromptOpen] = useState(false);
   const [customOpen, setCustomOpen] = useState(false);
   const [shortcutOpen, setShortcutOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [pendingCtx, setPendingCtx] = useState<ContextPayload | null>(null);
   const chainMode = useAppStore(s => s.chainMode);
 
   const inputRef = useRef<any>(null);
   const panelRefs = useRef<Map<string, ChatPanelHandle>>(new Map());
+  const inputHistory = useInputHistory();
 
   const activePreset = useMemo(() => {
     return options.layoutPresets.find(p => p.id === options.activeLayoutPresetId)
@@ -57,7 +62,7 @@ export default function ChatHubPage() {
 
   const activeAppIds = useMemo(() => activePreset?.appIdGroups.flat() || [], [activePreset]);
 
-  useEffect(() => { loadShortcutConfig(); }, []);
+  useEffect(() => { loadShortcutConfig(); inputHistory.load(); }, []);
   useEffect(() => { applyShortcutConfig(shortcutConfig); }, [shortcutConfig]);
 
   useEffect(() => {
@@ -113,6 +118,8 @@ export default function ChatHubPage() {
   function handleSubmit() {
     const trimmed = text.trim();
     if (!trimmed) return;
+    inputHistory.push(trimmed);
+    setLastSent(trimmed);
     if (chainMode) {
       const steps = chainStore.getState().steps;
       if (steps.length === 0) { message.warning(t('chain.needSteps')); return; }
@@ -125,15 +132,36 @@ export default function ChatHubPage() {
   }
 
   function onKeyDown(ev: React.KeyboardEvent<HTMLTextAreaElement>) {
-    const mode = getSendKeyMode();
     const cmd = ev.metaKey || ev.ctrlKey;
-    if (mode === 'enter' && ev.key === 'Enter' && !ev.shiftKey && !cmd) {
+
+    // Ctrl+R → open history popup
+    if (ev.key === 'r' && cmd) {
+      ev.preventDefault();
+      setHistoryOpen(true);
+      return;
+    }
+
+    const mode = getSendKeyMode();
+    if (mode === 'enter' && ev.key === 'Enter' && !ev.shiftKey && !cmd && !ev.nativeEvent.isComposing) {
       ev.preventDefault();
       handleSubmit();
     }
-    if (mode === 'cmdOrCtrlEnter' && ev.key === 'Enter' && cmd) {
+    if (mode === 'cmdOrCtrlEnter' && ev.key === 'Enter' && cmd && !ev.nativeEvent.isComposing) {
       ev.preventDefault();
       handleSubmit();
+    }
+
+    // Skip ↑/↓ inline navigation while popup is open (popup owns the keys)
+    if (historyOpen) return;
+
+    // ArrowUp at cursor start → history back; ArrowDown at cursor end → history forward
+    if (ev.key === 'ArrowUp' && ev.currentTarget.selectionStart === 0) {
+      const hit = inputHistory.navigate('up', text);
+      if (hit !== null) { ev.preventDefault(); setText(hit); }
+    }
+    if (ev.key === 'ArrowDown' && ev.currentTarget.selectionStart === ev.currentTarget.value.length) {
+      const hit = inputHistory.navigate('down', text);
+      if (hit !== null) { ev.preventDefault(); setText(hit); }
     }
   }
 
@@ -215,7 +243,6 @@ export default function ChatHubPage() {
 
   return (
     <div className="chathub-root">
-      <div className="gradient-hairline" />
       <div
         className="chathub-main"
         style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
@@ -256,62 +283,90 @@ export default function ChatHubPage() {
       </div>
 
       <div className="chathub-input-bar">
-        <ChainModeBar
-          inputValue={text}
-          onStartChain={async () => {
-            const steps = chainStore.getState().steps;
-            if (steps.length === 0) { message.warning(t('chain.needSteps')); return; }
-            if (!text.trim()) { message.warning(t('chain.needPrompt')); return; }
-            await chainStore.getState().start(text, steps);
-            setText('');
-          }}
-        />
-        <Tabs
-          size="small"
-          activeKey={options.activeLayoutPresetId}
-          onChange={key => setActiveLayout(key)}
-          items={options.layoutPresets.map(p => ({ key: p.id, label: p.name || p.id }))}
-          className="layout-tabs"
-          tabBarExtraContent={
-            <Tooltip title={t('app.layoutAdd')}>
-              <Button type="text" size="small" icon={<PlusOutlined />} onClick={() => setLayoutOpen(true)} />
-            </Tooltip>
-          }
-        />
-        <div style={{ flex: 1, minWidth: 8 }} />
-        {pendingCtx && (
-          <ContextPreviewChip
-            ctx={pendingCtx}
-            onDismiss={() => { setPendingCtx(null); setText(''); }}
-          />
+        {chainMode && (
+          <div className="input-bar-chain">
+            <ChainModeBar
+              inputValue={text}
+              onStartChain={async () => {
+                const steps = chainStore.getState().steps;
+                if (steps.length === 0) { message.warning(t('chain.needSteps')); return; }
+                if (!text.trim()) { message.warning(t('chain.needPrompt')); return; }
+                await chainStore.getState().start(text, steps);
+                setText('');
+              }}
+            />
+          </div>
         )}
-        <Input.TextArea
-          ref={inputRef}
-          rows={3}
-          value={text}
-          onChange={e => setText(e.target.value)}
-          onKeyDown={onKeyDown}
-          placeholder={t('app.inputPlaceholder')}
-          autoSize={{ minRows: 1, maxRows: 6 }}
-        />
-        <Tooltip title={t('app.send')}>
-          <Button type="primary" icon={<SendOutlined />} onClick={handleSubmit} />
-        </Tooltip>
-        <Tooltip title={t('app.capture')}>
-          <Button icon={<CameraOutlined />} loading={capturing} onClick={() => doScreenshot(false)} />
-        </Tooltip>
-        <Tooltip title={t('app.captureLong')}>
-          <Button icon={<ColumnHeightOutlined />} loading={capturing} onClick={() => doScreenshot(true)} />
-        </Tooltip>
-        <Tooltip title={t('app.newChat')}>
-          <Button icon={<ReloadOutlined />} onClick={() => panelRefs.current.forEach(p => p.newChat())} />
-        </Tooltip>
-        <Tooltip title={t('app.optimize')}>
-          <Button icon={<ThunderboltOutlined />} onClick={() => handleShortcut('optimizePrompt')} />
-        </Tooltip>
-        <Tooltip title={t('menu.settings')}>
-          <Button icon={<MenuOutlined />} onClick={() => setSettingsOpen(true)} />
-        </Tooltip>
+        {pendingCtx && (
+          <div className="input-bar-context">
+            <ContextPreviewChip
+              ctx={pendingCtx}
+              onDismiss={() => { setPendingCtx(null); setText(''); }}
+            />
+          </div>
+        )}
+        <div className="input-bar-row">
+          {!chainMode && (
+            <ChainModeBar
+              inputValue={text}
+              onStartChain={async () => {
+                const steps = chainStore.getState().steps;
+                if (steps.length === 0) { message.warning(t('chain.needSteps')); return; }
+                if (!text.trim()) { message.warning(t('chain.needPrompt')); return; }
+                await chainStore.getState().start(text, steps);
+                setText('');
+              }}
+            />
+          )}
+          <Tabs
+            size="small"
+            activeKey={options.activeLayoutPresetId}
+            onChange={key => setActiveLayout(key)}
+            items={options.layoutPresets.map(p => ({ key: p.id, label: p.name || p.id }))}
+            className="layout-tabs"
+          />
+          <div className="input-bar-tools">
+            <Tooltip title={t('menu.settings')} placement="top">
+              <Button type="text" icon={<MenuOutlined />} onClick={() => setSettingsOpen(true)} />
+            </Tooltip>
+            <Tooltip title={t('app.capture')} placement="top">
+              <Button type="text" icon={<CameraOutlined />} loading={capturing} onClick={() => doScreenshot(false)} />
+            </Tooltip>
+            <Tooltip title={t('app.captureLong')} placement="top">
+              <Button type="text" icon={<ColumnHeightOutlined />} loading={capturing} onClick={() => doScreenshot(true)} />
+            </Tooltip>
+            <Tooltip title={t('app.optimize')} placement="top">
+              <Button type="text" icon={<ThunderboltOutlined />} onClick={() => handleShortcut('optimizePrompt')} />
+            </Tooltip>
+            <Tooltip title={t('app.layoutAdd')} placement="top">
+              <Button type="text" icon={<PlusOutlined />} onClick={() => setLayoutOpen(true)} />
+            </Tooltip>
+            <Tooltip title={t('app.newChat')} placement="top">
+              <Button type="text" icon={<ReloadOutlined />} onClick={() => panelRefs.current.forEach(p => p.newChat())} />
+            </Tooltip>
+          </div>
+          <div className="history-popup-anchor">
+            {historyOpen && (
+              <HistoryPopup
+                query={text}
+                items={inputHistory.search(text)}
+                onSelect={hit => { setText(hit); setHistoryOpen(false); inputRef.current?.focus?.(); }}
+                onClose={() => { setHistoryOpen(false); inputRef.current?.focus?.(); }}
+              />
+            )}
+            <Input.TextArea
+              ref={inputRef}
+              value={text}
+              onChange={e => setText(e.target.value)}
+              onKeyDown={onKeyDown}
+              placeholder={lastSent || t('app.inputPlaceholder')}
+              autoSize={{ minRows: 1, maxRows: 5 }}
+            />
+          </div>
+          <Tooltip title={t('app.send')} placement="top">
+            <Button className="input-bar-send" type="primary" icon={<SendOutlined />} onClick={handleSubmit} />
+          </Tooltip>
+        </div>
       </div>
 
       <SettingsDrawer

@@ -14,7 +14,7 @@ const DEFAULT_OPTIONS: AppOptions = {
   colMaxCount: 0,
   themeMode: ThemeMode.System,
   language: Language.System,
-  primaryColor: '#1677ff',
+  primaryColor: '#00d992',
 };
 
 interface AppStore {
@@ -68,7 +68,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   async updateOptions(patch) {
-    const next = { ...get().options, ...patch };
+    const current = get().options;
+    const next: AppOptions = {
+      ...current,
+      ...patch,
+      layoutPresets: patch.layoutPresets ?? current.layoutPresets,
+    };
     set({ options: next });
     await setStorage(STORAGE_KEYS.options, next);
   },

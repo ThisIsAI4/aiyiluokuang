@@ -112,11 +112,6 @@ const ChatPanel = forwardRef<ChatPanelHandle, Props>(function ChatPanel({ app },
         title={app.id}
         loading="lazy"
       />
-      {!ready && (
-        <div className="chat-panel-loading-overlay">
-          <span style={{ color: 'var(--v-mute)', fontSize: 12 }}>Loading…</span>
-        </div>
-      )}
     </div>
   );
 });

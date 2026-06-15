@@ -3,15 +3,24 @@ import { getStorage, setStorage, removeStorage } from '../utils/storage';
 import { BUILTIN_BUNDLE } from './configs';
 import type { AppConfigBundle, ChatAppConfig } from '../types';
 
+function compareVersion(a: string, b: string): number {
+  const parse = (v: string) => v.split(/[.+-]/).map(p => parseInt(p, 10) || 0);
+  const av = parse(a);
+  const bv = parse(b);
+  for (let i = 0; i < Math.max(av.length, bv.length); i++) {
+    const diff = (av[i] || 0) - (bv[i] || 0);
+    if (diff !== 0) return diff;
+  }
+  return 0;
+}
+
 class ConfigManagerImpl {
   async getBaseConfig(): Promise<AppConfigBundle> {
     const builtin = BUILTIN_BUNDLE;
     try {
       const cached = await getStorage<AppConfigBundle>(STORAGE_KEYS.cachedConfig);
       if (cached) {
-        const cachedV = Number(cached.version);
-        const builtinV = Number(builtin.version);
-        if (Number.isNaN(cachedV) || builtinV > cachedV) {
+        if (compareVersion(builtin.version, cached.version) > 0) {
           await setStorage(STORAGE_KEYS.cachedConfig, builtin);
           return builtin;
         }

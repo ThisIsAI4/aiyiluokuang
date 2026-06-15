@@ -25,11 +25,11 @@ export function ChainModeBar({ inputValue, onStartChain }: Props) {
 
   const statusBadge = (() => {
     switch (chain.status) {
-      case 'idle': return <Tag>{t('chain.statusIdle')}</Tag>;
-      case 'waiting_user': return <Tag color="processing">{t('chain.statusWaiting', { current: chain.currentStep + 1, total: chain.steps.length })}</Tag>;
-      case 'running': return <Tag color="processing">{t('chain.statusIdle')}</Tag>;
-      case 'done': return <Tag color="success">{t('chain.statusDone')}</Tag>;
-      case 'aborted': return <Tag color="error">{t('chain.statusAborted')}</Tag>;
+      case 'idle': return <Tag className="status-badge-idle">{t('chain.statusIdle')}</Tag>;
+      case 'waiting_user': return <Tag className="status-badge-waiting">{t('chain.statusWaiting', { current: chain.currentStep + 1, total: chain.steps.length })}</Tag>;
+      case 'running': return <Tag className="status-badge-running">{t('chain.statusRunning')}</Tag>;
+      case 'done': return <Tag className="status-badge-done">{t('chain.statusDone')}</Tag>;
+      case 'aborted': return <Tag className="status-badge-aborted">{t('chain.statusAborted')}</Tag>;
     }
   })();
 
@@ -55,8 +55,8 @@ export function ChainModeBar({ inputValue, onStartChain }: Props) {
       {chainMode && (
         <>
           {platformNames.length > 0
-            ? <span style={{ opacity: 0.85 }}>{platformNames.join(' → ')}</span>
-            : <span style={{ opacity: 0.6 }}>({t('chain.statusIdle')})</span>}
+            ? <span className="chain-platforms">{platformNames.join(' → ')}</span>
+            : <span className="chain-platforms" style={{ opacity: 0.6 }}>({t('chain.statusIdle')})</span>}
           <Button size="small" icon={<EditOutlined />} onClick={() => setEditorOpen(true)}>{t('chain.edit')}</Button>
           {statusBadge}
           {primary}

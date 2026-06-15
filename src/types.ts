@@ -14,7 +14,40 @@ export type ChatAction =
   | { type: 'findLastAndSetDataId'; params: { selector: string; rootSelector: string; dataId: string } }
   | { type: 'waitForElement'; params: { selector: string; timeout?: number } }
   | { type: 'wait'; params: { duration: number } }
-  | { type: 'triggerClick'; params: { selector: string } };
+  | { type: 'triggerClick'; params: { selector: string } }
+  // Idempotent "ensure a toggle is ON" — locate a toggle by CSS or visible text,
+  // detect whether it is already active, and click only when it is off. Safe to
+  // re-run on every page load (used by readyActions) without flipping it back off.
+  | {
+      type: 'ensureToggleOn';
+      params: {
+        selector?: SelectorRef;
+        buttonText?: string | string[];
+        activeSelector?: string;
+        activeClass?: string;
+        activeAttr?: string;
+        activeAttrValue?: string;
+        timeout?: number;
+        includeNonSemantic?: boolean;
+      };
+    }
+  // Idempotent "select an option from a menu by visible text" — e.g. pick a model
+  // from a model-switcher dropdown. Skips opening the menu when the current
+  // selection already shows the desired text.
+  | {
+      type: 'selectByText';
+      params: {
+        trigger?: SelectorRef;
+        triggerText?: string | string[];
+        optionText: string | string[];
+        optionScope?: string;
+        currentLabel?: SelectorRef;
+        currentText?: string | string[];
+        timeout?: number;
+        menuDelay?: number;
+        includeNonSemantic?: boolean;
+      };
+    };
 
 export interface ChatAppConfig {
   id: string;

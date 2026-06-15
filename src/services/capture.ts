@@ -32,7 +32,7 @@ async function requestFromBackground(format: 'png' | 'jpeg', quality = 70): Prom
 }
 
 export async function stitchLongCapture(panels: ChatPanelHandle[]): Promise<void> {
-  const started: HTMLIFrameElement[] = [];
+  const started = new Set<HTMLIFrameElement>();
   const initResults = await Promise.all(panels.map(async p => {
     const ifr = p.getIframe();
     if (!ifr) return null;
@@ -41,7 +41,7 @@ export async function stitchLongCapture(panels: ChatPanelHandle[]): Promise<void
         scrollHeight: number; scrollWidth: number; clientHeight: number; clientWidth: number;
         pageX: number; pageY: number;
       }>(ifr, 'captureStart', undefined, CAPTURE_START_TIMEOUT);
-      started.push(ifr);
+      started.add(ifr);
       if (!innerInfo || innerInfo.scrollHeight === 0) return null;
       return {
         iframe: ifr,
@@ -51,7 +51,7 @@ export async function stitchLongCapture(panels: ChatPanelHandle[]): Promise<void
       } as StitchPanelInfo;
     } catch (err) {
       console.warn('captureStart failed', err);
-      started.push(ifr);
+      started.add(ifr);
       return null;
     }
   }));
@@ -129,7 +129,7 @@ export async function stitchLongCapture(panels: ChatPanelHandle[]): Promise<void
     const blob = await canvasToBlob(canvas, 'image/png', screenshotConfig.quality);
     openImageInNewTab(URL.createObjectURL(blob));
   } finally {
-    await Promise.allSettled(started.map(ifr =>
+    await Promise.allSettled(Array.from(started).map(ifr =>
       sendToIframe(ifr, 'captureEnd', undefined, CAPTURE_END_TIMEOUT)));
   }
 }

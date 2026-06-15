@@ -144,6 +144,13 @@ Each `ChatPanel` exposes a `sendText(text)` imperative handle. The page collects
 1. Uses `sendToIframe(iframeRef, 'sendText', {text})` → `window.postMessage` to the iframe.
 2. The iframe's `main.ts` receives the message, runs `inputActions`, fills the input via the configured `inputMethod`, then either clicks the configured `sendButtonSelector` or dispatches Enter.
 
+### How are platforms auto-configured (thinking model + web search) on every load?
+Each platform config can declare `readyActions` — declarative actions the iframe's `main.ts` runs once the chat input appears, on **every** page load and refresh. Two idempotent action types drive the "best thinking model + tools" goal:
+- `ensureToggleOn` — finds a toggle by `selector` or visible `buttonText` (array of candidate strings, matched by visible text since these sites ship hashed class names), checks whether it is already active, and clicks **only when off**. This is what keeps web-search / deep-thinking enabled without flipping it back off on the next refresh.
+- `selectByText` — opens a model-switcher (`triggerText`) and clicks an option by visible `optionText`; short-circuits via `currentLabel`/`currentText` when the desired model is already selected.
+
+Both fail safe: if a selector or label never matches, they time out and do nothing — the site is left untouched. Selectors/labels for sites beyond the primary set are best-effort and may need live tuning as platforms change their UI.
+
 ### How does the long screenshot work?
 1. Parent calls `captureStart` on each iframe in parallel — each iframe finds its scroll container (heuristic detection), hides fixed/sticky/absolute overlay elements, and returns its scroll metrics.
 2. Parent calculates output canvas dimensions and an aggregated scale ratio.

@@ -42,6 +42,7 @@ export default {
     rateUs: 'Rate us',
     donateUs: 'Donate',
   },
+  group: { international: 'International', chinese: 'China', custom: 'Custom', other: 'Other' },
   theme: { system: 'System', light: 'Light', dark: 'Dark' },
   language: {
     system: 'System',

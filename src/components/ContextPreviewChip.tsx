@@ -27,7 +27,7 @@ export function ContextPreviewChip({ ctx, onDismiss }: Props) {
         icon={KIND_ICON[ctx.kind]}
         closable
         closeIcon={<CloseOutlined onClick={onDismiss} />}
-        style={{ margin: '4px 0', padding: '4px 10px', cursor: 'pointer' }}
+        className="context-chip"
         onClick={e => {
           if ((e.target as HTMLElement).closest('.anticon-close')) return;
           chrome.tabs.create({ url: ctx.sourceUrl });

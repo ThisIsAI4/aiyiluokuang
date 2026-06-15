@@ -117,7 +117,7 @@ async function registerContentScripts() {
 
 chrome.runtime.onInstalled.addListener(() => {
   ensureClientId().catch(console.warn);
-  try {
+  chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({
       id: 'chathub-send-selection',
       title: '发到 ChatHub：%s',
@@ -128,9 +128,7 @@ chrome.runtime.onInstalled.addListener(() => {
       title: '用 ChatHub 总结当前页/PDF',
       contexts: ['page', 'frame'],
     });
-  } catch (err) {
-    console.warn('[background] contextMenus.create failed', err);
-  }
+  });
 });
 
 chrome.action.onClicked.addListener(() => {
@@ -169,7 +167,13 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg.action === 'captureVisibleTab') {
     chrome.tabs.captureVisibleTab(
       { format: (msg.data?.format as 'jpeg' | 'png') || 'png', quality: msg.data?.quality ?? 70 },
-      url => sendResponse({ url }),
+      url => {
+        if (chrome.runtime.lastError) {
+          sendResponse({ error: chrome.runtime.lastError.message });
+        } else {
+          sendResponse({ url });
+        }
+      },
     );
     return true;
   }

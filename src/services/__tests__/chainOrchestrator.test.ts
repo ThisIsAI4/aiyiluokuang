@@ -98,11 +98,11 @@ describe('chainOrchestrator', () => {
     expect(store.getState().lastError).toBeNull();
   });
 
-  it('rejects start with empty steps', () => {
+  it('rejects start with empty steps', async () => {
     const d = makeDispatcher();
     const store = createChainStore(d);
 
-    expect(() => store.getState().start('hello', [])).toThrow();
+    await expect(store.getState().start('hello', [])).rejects.toThrow();
     expect(store.getState().status).toBe('idle');
   });
 });

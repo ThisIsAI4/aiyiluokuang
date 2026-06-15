@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Modal, Input, Button, List, Form, Space, Tag, App as AntApp } from 'antd';
-import { PlusOutlined, DeleteOutlined, MinusOutlined } from '@ant-design/icons';
+import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '../store';
 import { v4 as uuid } from 'uuid';
@@ -21,6 +21,30 @@ export default function LayoutManager({ open, onClose }: Props) {
 
   const allAppIds = bundle?.chatApps.map(a => a.id) || [];
 
+  // Group platforms by bundle.chatGroups (international / chinese / custom),
+  // collecting any ungrouped apps under an "other" bucket so nothing disappears.
+  const groupedAppIds = (() => {
+    const groups = bundle?.chatGroups || [];
+    const seen = new Set<string>();
+    const result = groups.map(g => {
+      const ids = g.chatAppIds.filter(id => {
+        if (seen.has(id) || !allAppIds.includes(id)) return false;
+        seen.add(id);
+        return true;
+      });
+      return { id: g.id, ids };
+    }).filter(g => g.ids.length > 0);
+    const leftover = allAppIds.filter(id => !seen.has(id));
+    if (leftover.length) result.push({ id: 'other', ids: leftover });
+    return result;
+  })();
+
+  function groupLabel(id: string) {
+    const key = `group.${id}`;
+    const translated = t(key);
+    return translated === key ? id : translated;
+  }
+
   function newLayout() {
     if (!name.trim()) return;
     const preset: LayoutPreset = { id: uuid(), name: name.trim(), appIdGroups: [] };
@@ -36,13 +60,14 @@ export default function LayoutManager({ open, onClose }: Props) {
 
   return (
     <Modal open={open} onCancel={onClose} footer={null} title={t('app.selectLayout')} width={760}>
-      <Space direction="vertical" style={{ width: '100%' }}>
-        <Space>
+      <Space direction="vertical" style={{ width: '100%', gap: 'var(--v-space-lg)' }}>
+        <Space style={{ width: '100%' }}>
           <Input
             placeholder="Layout name"
             value={name}
             onChange={e => setName(e.target.value)}
             onPressEnter={newLayout}
+            style={{ width: 280 }}
           />
           <Button icon={<PlusOutlined />} type="primary" onClick={newLayout}>
             {t('app.layoutAdd')}
@@ -50,9 +75,12 @@ export default function LayoutManager({ open, onClose }: Props) {
         </Space>
 
         <List
+          bordered
           dataSource={options.layoutPresets}
+          style={{ borderColor: 'var(--v-hairline)', borderRadius: 'var(--v-radius-sm)', overflow: 'hidden' }}
           renderItem={preset => (
             <List.Item
+              style={{ borderColor: 'var(--v-hairline)', padding: 'var(--v-space-md) var(--v-space-lg)' }}
               actions={[
                 <Button
                   size="small"
@@ -67,22 +95,36 @@ export default function LayoutManager({ open, onClose }: Props) {
               ]}
             >
               <List.Item.Meta
-                title={preset.name || preset.id}
+                title={<span style={{ color: 'var(--v-ink)', fontWeight: 600 }}>{preset.name || preset.id}</span>}
                 description={
-                  <Space wrap>
-                    {allAppIds.map(id => {
-                      const selected = preset.appIdGroups.flat().includes(id);
-                      const label = PLATFORM_DISPLAY[id]?.name || id;
-                      return (
-                        <Tag.CheckableTag
-                          key={id}
-                          checked={selected}
-                          onChange={() => togglePanel(preset, id)}
-                        >
-                          {label}
-                        </Tag.CheckableTag>
-                      );
-                    })}
+                  <Space direction="vertical" style={{ width: '100%', marginTop: 'var(--v-space-xs)', gap: 'var(--v-space-sm)' }}>
+                    {groupedAppIds.map(group => (
+                      <div key={group.id}>
+                        <div style={{
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: 'var(--v-mute)',
+                          marginBottom: 'var(--v-space-xs)',
+                        }}>
+                          {groupLabel(group.id)}
+                        </div>
+                        <Space wrap>
+                          {group.ids.map(id => {
+                            const selected = preset.appIdGroups.flat().includes(id);
+                            const label = PLATFORM_DISPLAY[id]?.name || id;
+                            return (
+                              <Tag.CheckableTag
+                                key={id}
+                                checked={selected}
+                                onChange={() => togglePanel(preset, id)}
+                              >
+                                {label}
+                              </Tag.CheckableTag>
+                            );
+                          })}
+                        </Space>
+                      </div>
+                    ))}
                   </Space>
                 }
               />

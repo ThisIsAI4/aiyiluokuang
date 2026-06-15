@@ -1,4 +1,4 @@
-import { Drawer, Form, Select, Slider, Space, Button, Divider, ColorPicker, App as AntApp } from 'antd';
+import { Drawer, Form, Select, Slider, Space, Button, Divider, App as AntApp } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '../store';
 import { Language, ThemeMode, CHATS_LIMIT } from '../utils/constants';
@@ -21,8 +21,11 @@ export default function SettingsDrawer({
 
   return (
     <Drawer open={open} onClose={onClose} title={t('menu.settings')} width={360}>
-      <Form layout="vertical">
-        <Form.Item label={t('menu.themeMode')}>
+      <Form layout="vertical" style={{ paddingBottom: 'var(--v-space-lg)' }}>
+        <Form.Item
+          label={t('menu.themeMode')}
+          style={{ marginBottom: 'var(--v-space-lg)' }}
+        >
           <Select
             value={options.themeMode}
             onChange={v => updateOptions({ themeMode: v })}
@@ -34,7 +37,10 @@ export default function SettingsDrawer({
           />
         </Form.Item>
 
-        <Form.Item label={t('menu.language')}>
+        <Form.Item
+          label={t('menu.language')}
+          style={{ marginBottom: 'var(--v-space-lg)' }}
+        >
           <Select
             value={options.language}
             onChange={v => updateOptions({ language: v })}
@@ -46,14 +52,10 @@ export default function SettingsDrawer({
           />
         </Form.Item>
 
-        <Form.Item label={t('menu.primaryColor')}>
-          <ColorPicker
-            value={options.primaryColor}
-            onChange={c => updateOptions({ primaryColor: c.toHexString() })}
-          />
-        </Form.Item>
-
-        <Form.Item label={`${t('menu.columnMaxCount')} (0 = ${t('menu.columnMaxCountAuto')})`}>
+        <Form.Item
+          label={`${t('menu.columnMaxCount')} (0 = ${t('menu.columnMaxCountAuto')})`}
+          style={{ marginBottom: 'var(--v-space-xl)' }}
+        >
           <Slider
             min={0}
             max={CHATS_LIMIT}
@@ -62,21 +64,21 @@ export default function SettingsDrawer({
           />
         </Form.Item>
 
-        <Divider />
+        <Divider style={{ margin: 'var(--v-space-md) 0 var(--v-space-lg)' }} />
 
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <Button block onClick={onOpenPromptLibrary}>{t('menu.promptLibrary')}</Button>
-          <Button block onClick={onOpenCustomConfig}>{t('menu.customConfig')}</Button>
-          <Button block onClick={onOpenShortcut}>{t('menu.shortcut')}</Button>
+        <Space direction="vertical" style={{ width: '100%', gap: 'var(--v-space-sm)' }}>
+          <Button block type="default" onClick={onOpenPromptLibrary}>{t('menu.promptLibrary')}</Button>
+          <Button block type="default" onClick={onOpenCustomConfig}>{t('menu.customConfig')}</Button>
+          <Button block type="default" onClick={onOpenShortcut}>{t('menu.shortcut')}</Button>
         </Space>
 
-        <Divider />
+        <Divider style={{ margin: 'var(--v-space-lg) 0 var(--v-space-md)' }} />
 
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <Button block onClick={() => window.open('https://github.com/yourname/chathub-replica', '_blank')}>
+        <Space direction="vertical" style={{ width: '100%', gap: 'var(--v-space-sm)' }}>
+          <Button block type="default" onClick={() => window.open('https://github.com/yourname/chathub-replica', '_blank')}>
             {t('menu.homepage')}
           </Button>
-          <Button block onClick={() => message.info('thank you!')}>
+          <Button block type="default" onClick={() => message.info('thank you!')}>
             {t('menu.rateUs')}
           </Button>
         </Space>

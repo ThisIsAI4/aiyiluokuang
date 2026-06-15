@@ -37,7 +37,7 @@ export default function PromptLibraryModal({ open, onClose }: Props) {
   return (
     <Modal open={open} onCancel={onClose} footer={null} title={t('promptLibrary.title')} width={720}>
       {!editing ? (
-        <Space direction="vertical" style={{ width: '100%' }}>
+        <Space direction="vertical" style={{ width: '100%', gap: 'var(--v-space-lg)' }}>
           <Button icon={<PlusOutlined />} type="primary" onClick={startNew}>
             {t('promptLibrary.add')}
           </Button>

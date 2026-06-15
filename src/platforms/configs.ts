@@ -1,6 +1,6 @@
 import type { AppConfigBundle, ChatAppConfig } from '../types';
 
-export const BUILTIN_CONFIG_VERSION = '26050601';
+export const BUILTIN_CONFIG_VERSION = '26060610';
 
 export const BUILTIN_CHAT_APPS: ChatAppConfig[] = [
   // International
@@ -25,12 +25,27 @@ export const BUILTIN_CHAT_APPS: ChatAppConfig[] = [
     ],
     sendButtonSelector: "[data-id='send-button']",
   },
-  { id: 'Perplexity', url: 'https://www.perplexity.ai/', inputMethod: 'paste' },
+  { id: 'Perplexity', url: 'https://www.perplexity.ai/', inputMethod: 'paste',
+    // Web search is intrinsic; the strongest mode is "Research" (deep research).
+    readyActions: [
+      { type: 'ensureToggleOn', params: { buttonText: ['Research', 'Pro', '研究'] } },
+    ],
+  },
   { id: 'You', url: 'https://you.com/' },
-  { id: 'ChatGPT', url: 'https://chatgpt.com/', inputSelector: '#prompt-textarea' },
+  { id: 'ChatGPT', url: 'https://chatgpt.com/', inputSelector: '#prompt-textarea',
+    // Goal: web search on. "Search" lives in the composer tools; Thinking is model-driven.
+    readyActions: [
+      { type: 'ensureToggleOn', params: { buttonText: ['Search', 'Search the web', '搜索'] } },
+    ],
+  },
   {
     id: 'Claude',
     url: 'https://claude.ai/',
+    // Goal: web search + extended thinking on. Both are user toggles in claude.ai.
+    readyActions: [
+      { type: 'ensureToggleOn', params: { buttonText: ['Web search', '网络搜索', '联网搜索'] } },
+      { type: 'ensureToggleOn', params: { buttonText: ['Extended', 'Extended thinking', '扩展思考'] } },
+    ],
     sendActions: [
       {
         type: 'findLastAndSetDataId',
@@ -43,13 +58,30 @@ export const BUILTIN_CHAT_APPS: ChatAppConfig[] = [
     ],
     sendButtonSelector: "[data-id='send-button']",
   },
-  { id: 'Gemini', url: 'https://gemini.google.com/app' },
-  { id: 'Grok', url: 'https://grok.com/' },
+  { id: 'Gemini', url: 'https://gemini.google.com/app',
+    // Goal: strongest reasoning. "Thinking"/"Deep Think" selected via the model/prompt bar; best-effort.
+    readyActions: [
+      { type: 'ensureToggleOn', params: { buttonText: ['Deep Think', 'Thinking', '深度思考'] } },
+    ],
+  },
+  { id: 'Grok', url: 'https://grok.com/',
+    // Goal: web search + reasoning. Grok exposes "DeepSearch" and "Think" buttons.
+    readyActions: [
+      { type: 'ensureToggleOn', params: { buttonText: ['Think', '思考'] } },
+      { type: 'ensureToggleOn', params: { buttonText: ['DeepSearch', 'DeeperSearch', 'Search'] } },
+    ],
+  },
   { id: 'Meta', url: 'https://www.meta.ai/', inputMethod: 'paste' },
   { id: 'Mistral', url: 'https://chat.mistral.ai/chat', firefoxInputMethod: 'text' },
   { id: 'Poe', url: 'https://poe.com/' },
   { id: 'QwenChat', url: 'https://chat.qwen.ai/', inputSelector: 'textarea.message-input-textarea', inputMethod: 'input' },
-  { id: 'Zai', url: 'https://chat.z.ai/', inputSelector: 'textarea#chat-input', inputMethod: 'input' },
+  { id: 'Zai', url: 'https://chat.z.ai/', inputSelector: 'textarea#chat-input', inputMethod: 'input',
+    // Goal: enable web search by default. z.ai is web-component/shadow-DOM heavy and the
+    // search control may be icon-only (no text) — verify the live label/selector.
+    readyActions: [
+      { type: 'ensureToggleOn', params: { buttonText: ['Web Search', '联网搜索', 'Search', '网络搜索', '联网'] } },
+    ],
+  },
   // Chinese
   { id: 'MetaSo', url: 'https://metaso.cn/' },
   {
@@ -58,12 +90,42 @@ export const BUILTIN_CHAT_APPS: ChatAppConfig[] = [
     inputMethod: 'paste',
     sendButtonSelector: '.send-btn',
   },
-  { id: 'ChatGLM', url: 'https://chatglm.cn/' },
-  { id: 'DeepSeek', url: 'https://chat.deepseek.com/', inputSelector: 'textarea', inputMethod: 'input' },
-  { id: 'DouBao', url: 'https://www.doubao.com/', inputSelector: 'textarea.semi-input-textarea', inputMethod: 'input' },
+  { id: 'ChatGLM', url: 'https://chatglm.cn/',
+    readyActions: [
+      { type: 'ensureToggleOn', params: { buttonText: ['深度思考', '沉思'] } },
+      { type: 'ensureToggleOn', params: { buttonText: ['联网搜索', '联网'] } },
+    ],
+  },
+  { id: 'DeepSeek', url: 'https://chat.deepseek.com/', inputSelector: 'textarea', inputMethod: 'input',
+    // Goal: "Expert"-level answers + tools. DeepSeek has no literal "Expert" mode in the
+    // chat UI; the strongest setting is DeepThink (reasoning) + web search both on.
+    readyActions: [
+      { type: 'ensureToggleOn', params: { buttonText: ['深度思考', '深度思考 (R1)', 'DeepThink'] } },
+      { type: 'ensureToggleOn', params: { buttonText: ['联网搜索', 'Search'] } },
+    ],
+  },
+  { id: 'DouBao', url: 'https://www.doubao.com/', inputSelector: 'textarea.semi-input-textarea', inputMethod: 'input',
+    // Goal: 专家 mode. DouBao's mode switcher is a <button> pill; clicking it opens a
+    // <menuitem> list (快速 / 专家 / 任务). Pick 专家. Idempotent: selectByText bails
+    // when the trigger already reads 专家, so refreshes are no-ops.
+    readyActions: [
+      { type: 'selectByText', params: { triggerText: ['快速', '思考', '专家', '任务'], optionText: '专家', includeNonSemantic: true, menuDelay: 500 } },
+    ],
+  },
   { id: 'HaiLuo', url: 'https://agent.minimaxi.com/', inputMethod: 'text' },
-  { id: 'HunYuan', url: 'https://yuanbao.tencent.com/', inputSelector: '.ql-editor', inputMethod: 'paste' },
-  { id: 'Kimi', url: 'https://www.kimi.com/', inputSelector: '.chat-input-editor', inputMethod: 'paste' },
+  { id: 'HunYuan', url: 'https://yuanbao.tencent.com/', inputSelector: '.ql-editor', inputMethod: 'paste',
+    readyActions: [
+      { type: 'ensureToggleOn', params: { buttonText: ['深度思考', 'DeepSeek'] } },
+      { type: 'ensureToggleOn', params: { buttonText: ['联网搜索', '联网'] } },
+    ],
+  },
+  { id: 'Kimi', url: 'https://www.kimi.com/', inputSelector: '.chat-input-editor', inputMethod: 'paste',
+    // Kimi uses 长思考 (not 深度思考) and 联网, inside the 工具箱.
+    readyActions: [
+      { type: 'ensureToggleOn', params: { buttonText: ['长思考', '深度思考', 'Long Thinking'] } },
+      { type: 'ensureToggleOn', params: { buttonText: ['联网', '联网搜索', 'Search'] } },
+    ],
+  },
   { id: 'LingGuang', url: 'https://www.lingguang.com/chat' },
   { id: 'LongCat', url: 'https://longcat.chat/', inputSelector: '.ProseMirror', inputMethod: 'paste' },
   { id: 'Qwen', url: 'https://www.qianwen.com/', inputMethod: 'paste' },

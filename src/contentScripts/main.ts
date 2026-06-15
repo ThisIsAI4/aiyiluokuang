@@ -47,19 +47,40 @@ async function loadConfig() {
 
 async function awaitReady() {
   if (!config) return;
+  const start = Date.now();
+  const timeout = 30_000;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+
   const tick = async () => {
     if (!config) return;
     const el = findInputElement(config.inputSelector);
     if (el) {
       if (config.readyActions) {
-        try { await ActionEngine.run(config.readyActions); } catch (err) { console.warn(err); }
+        try { await ActionEngine.run(config.readyActions); } catch (err) { console.warn('[content] readyActions error:', err); }
       }
       sendToParent('contentReady').catch(() => {});
+      // Retry readyActions once after a delay to handle UI components that load
+      // after the input element (model selectors, toggles, etc.).  Safe because
+      // every action type is idempotent by design.
+      if (config?.readyActions) {
+        const retryActions = config.readyActions;
+        setTimeout(async () => {
+          try { await ActionEngine.run(retryActions); } catch (err) { /* already warned above */ }
+        }, 4000);
+      }
       return;
     }
-    setTimeout(tick, 200);
+    if (Date.now() - start > timeout) {
+      console.warn('[content] awaitReady timed out');
+      return;
+    }
+    timer = setTimeout(tick, 200);
   };
   tick();
+
+  // Cleanup on page hide / unload to avoid lingering timers.
+  const cleanup = () => { if (timer) clearTimeout(timer); };
+  window.addEventListener('pagehide', cleanup, { once: true });
 }
 
 async function sendText(text: string) {

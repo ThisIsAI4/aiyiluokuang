@@ -84,7 +84,17 @@ export default function ShortcutModal({ open, onClose }: Props) {
         </Form.Item>
       </Form>
 
-      <Alert type="info" showIcon message={t('shortcut.info')} style={{ marginBottom: 12 }} />
+      <Alert
+        type="info"
+        showIcon
+        message={t('shortcut.info')}
+        style={{
+          marginBottom: 12,
+          background: 'var(--v-surface-2)',
+          border: '1px solid var(--v-hairline)',
+          color: 'var(--v-body)',
+        }}
+      />
 
       <List
         dataSource={ALL_SHORTCUT_ACTIONS}
@@ -106,7 +116,7 @@ export default function ShortcutModal({ open, onClose }: Props) {
                 title={
                   <Space>
                     {t(`shortcut.${action}`)}
-                    {INTENT_SCOPED_ACTIONS.includes(action) ? <Tag color="purple">{t('shortcut.chatPanelShortcut')}</Tag> : <Tag color="blue">{t('shortcut.globalShortcut')}</Tag>}
+                    {INTENT_SCOPED_ACTIONS.includes(action) ? <Tag className="tag-accent">{t('shortcut.chatPanelShortcut')}</Tag> : <Tag className="tag-accent-secondary">{t('shortcut.globalShortcut')}</Tag>}
                   </Space>
                 }
                 description={<Tag>{label}</Tag>}

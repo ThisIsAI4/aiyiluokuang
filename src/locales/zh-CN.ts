@@ -42,6 +42,7 @@ export default {
     rateUs: '评分',
     donateUs: '赞助',
   },
+  group: { international: '国外', chinese: '国内', custom: '自定义', other: '其他' },
   theme: { system: '跟随系统', light: '浅色', dark: '深色' },
   language: { system: '跟随系统', en: 'English', 'zh-CN': '简体中文' },
   promptLibrary: {
