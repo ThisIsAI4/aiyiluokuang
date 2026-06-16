@@ -1,6 +1,6 @@
 {
   "name": "chathub-replica",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Aggregate mainstream AI chat platforms into one panel — full functional replica of Simple Chat Hub.",
   "type": "module",
   "scripts": {
@@ -9,7 +9,9 @@
     "build:pdf-worker": "node scripts/copy-pdf-worker.mjs",
     "build": "npm run build:priority && npm run build:pdf-worker && tsc -b --noEmit && vite build",
     "build:firefox": "node scripts/build-firefox.mjs",
-    "pack": "node scripts/pack.mjs",
+    "pack": "node scripts/pack.mjs chrome",
+    "pack:firefox": "node scripts/pack.mjs firefox",
+    "pack:all": "node scripts/pack.mjs all",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",

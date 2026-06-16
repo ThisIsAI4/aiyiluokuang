@@ -1,14 +1,23 @@
 #!/usr/bin/env node
-// Package the built Chrome extension into distributable artifacts.
+// Package the built extension(s) into distributable artifacts.
+//
+// Usage:
+//   node scripts/pack.mjs            # Chrome only (default)
+//   node scripts/pack.mjs chrome     # Chrome
+//   node scripts/pack.mjs firefox    # Firefox
+//   node scripts/pack.mjs all        # Both
 //
 // Outputs (in release/):
-//   <name>-<version>.zip — unpacked extension + install guide (load via dev mode)
-//   <name>-<version>.crx — signed CRX3 package (for Chromium browsers that allow it)
-//   extension.pem        — signing key, auto-generated on first run, KEEP PRIVATE
+//   chathub-replica-<version>.zip          — Chrome unpacked extension + install guide
+//   chathub-replica-<version>.crx          — signed CRX3 package (Chrome only)
+//   chathub-replica-firefox-<version>.zip  — Firefox unpacked extension + install guide
+//   extension.pem                          — Chrome signing key, auto-generated on
+//                                            first run, KEEP PRIVATE
 //
 // Prerequisites:
-//   - `npm run build` has produced dist/
-//   - `crx3` (devDependency) and `python3` on PATH
+//   - `npm run build` has produced dist/            (Chrome)
+//   - `npm run build:firefox` has produced dist-firefox/  (Firefox)
+//   - `crx3` (devDependency) and `python3` on PATH  (crx3 only needed for Chrome)
 //
 // Why python3 for the ZIP: macOS `zip` does not set the UTF-8 flag on non-ASCII
 // filenames, so the Chinese install-guide name garbles on Windows. Python's
@@ -28,7 +37,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const GUIDE_NAME = '安装说明.txt';
-const INSTALL_GUIDE = `
+const INSTALL_GUIDE_CHROME = `
 ========================================
   ChatHub Replica 浏览器扩展 · 安装说明
 ========================================
@@ -69,6 +78,45 @@ Google Chrome、Microsoft Edge 以及其他基于 Chromium 的浏览器。
 有问题请联系分享给你这个扩展的朋友。
 `;
 
+const INSTALL_GUIDE_FIREFOX = `
+========================================
+  ChatHub Replica 浏览器扩展 · Firefox 安装说明
+========================================
+
+【这是什么】
+一个把主流 AI 聊天网站聚合到同一个面板的浏览器扩展（Firefox 版）。
+
+【重要提示】
+这个扩展没有经过 Mozilla 官方签名。Firefox 默认只允许安装已签名的
+扩展，所以需要通过下面的「临时加载」方式安装。
+
+【安装步骤】
+1. 把这个压缩包（.zip）解压成一个文件夹。
+   解压后，文件夹里应该能看到 manifest.json 文件。
+
+2. 在 Firefox 地址栏输入 about:debugging 后回车。
+
+3. 点击左侧「此 Firefox」(This Firefox)。
+
+4. 点击「临时加载附加组件…」(Load Temporary Add-on…) 按钮。
+
+5. 在弹出的对话框里，选中第 1 步解压出来的文件夹中的 manifest.json 文件。
+
+6. 安装完成。点浏览器右上角的扩展图标即可使用。
+
+【注意事项】
+· 临时加载的扩展在 Firefox 完全退出后会消失，需要按上面的步骤重新加载。
+· 若希望持久安装，需要使用 Firefox Developer Edition / Nightly / ESR，
+  并把 about:config 中的 xpinstall.signatures.required 设为 false；
+  或将扩展提交到 Mozilla 扩展商店 (AMO) 进行官方签名。
+
+【如何更新到新版本】
+收到新版的压缩包后，解压覆盖原来的文件夹，然后在 about:debugging
+页面点击 ChatHub Replica 的「重新加载」按钮 🔄 即可。
+
+有问题请联系分享给你这个扩展的朋友。
+`;
+
 // python3 one-shot: zip a directory, then append one extra file at the zip root.
 // zipfile sets the UTF-8 flag on non-ASCII names, fixing Windows filename garble.
 const PY_MAKE_ZIP = `
@@ -85,23 +133,43 @@ with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as z:
 `;
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const DIST = path.join(ROOT, 'dist');
 const RELEASE = path.join(ROOT, 'release');
-
 const pkg = JSON.parse(readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
-const base = `${pkg.name}-${pkg.version}`;
-const zipPath = path.join(RELEASE, `${base}.zip`);
-const crxPath = path.join(RELEASE, `${base}.crx`);
-const pemPath = path.join(RELEASE, 'extension.pem');
 
 // ---------------------------------------------------------------------------
-// Preflight checks
+// Shared helpers
 // ---------------------------------------------------------------------------
-if (!existsSync(path.join(DIST, 'manifest.json'))) {
-  console.error('✗ dist/manifest.json not found — run `npm run build` first.');
-  process.exit(1);
+
+// Copy a build dir into a clean temp dir, stripping build cache, signing keys,
+// and OS noise so they never end up inside the archive.
+function stageClean(srcDir) {
+  const staged = mkdtempSync(path.join(tmpdir(), 'chathub-stage-'));
+  cpSync(srcDir, staged, { recursive: true });
+  rmSync(path.join(staged, '.vite'), { recursive: true, force: true });
+  for (const name of readdirSync(staged)) {
+    if (name.endsWith('.pem') || name === '.DS_Store') {
+      rmSync(path.join(staged, name), { force: true });
+    }
+  }
+  return staged;
 }
-for (const bin of ['crx3', 'python3']) {
+
+// Write the install guide to a temp file and return its path. Caller owns cleanup.
+function writeGuideFile(text) {
+  const dir = mkdtempSync(path.join(tmpdir(), 'chathub-guide-'));
+  writeFileSync(path.join(dir, GUIDE_NAME), `${text.trim()}\n`, 'utf8');
+  return path.join(dir, GUIDE_NAME);
+}
+
+// ZIP a staged dir, appending the install guide at the archive root.
+function makeZip(stagedDir, guidePath, outPath) {
+  rmSync(outPath, { force: true });
+  execFileSync('python3', ['-c', PY_MAKE_ZIP, stagedDir, guidePath, GUIDE_NAME, outPath], {
+    stdio: 'inherit',
+  });
+}
+
+function requireBin(bin) {
   try {
     execSync(`command -v ${bin}`, { stdio: 'ignore' });
   } catch {
@@ -110,54 +178,89 @@ for (const bin of ['crx3', 'python3']) {
     process.exit(1);
   }
 }
-mkdirSync(RELEASE, { recursive: true });
-rmSync(zipPath, { force: true });
-rmSync(crxPath, { force: true });
 
-const staged = mkdtempSync(path.join(tmpdir(), 'chathub-stage-'));
-const work = mkdtempSync(path.join(tmpdir(), 'chathub-pack-'));
-try {
-  // -------------------------------------------------------------------------
-  // Clean staging copy of dist — drop build cache, signing keys, OS noise
-  // -------------------------------------------------------------------------
-  cpSync(DIST, staged, { recursive: true });
-  rmSync(path.join(staged, '.vite'), { recursive: true, force: true });
-  for (const name of readdirSync(staged)) {
-    if (name.endsWith('.pem') || name === '.DS_Store') {
-      rmSync(path.join(staged, name), { force: true });
-    }
+// ---------------------------------------------------------------------------
+// Chrome: unpacked ZIP + signed CRX3 (stable signing key for in-place upgrades)
+// ---------------------------------------------------------------------------
+function packChrome() {
+  const DIST = path.join(ROOT, 'dist');
+  if (!existsSync(path.join(DIST, 'manifest.json'))) {
+    console.error('✗ dist/manifest.json not found — run `npm run build` first.');
+    process.exit(1);
   }
+  requireBin('crx3');
+  requireBin('python3');
 
-  writeFileSync(path.join(work, GUIDE_NAME), `${INSTALL_GUIDE.trim()}\n`, 'utf8');
+  const base = `${pkg.name}-${pkg.version}`;
+  const zipPath = path.join(RELEASE, `${base}.zip`);
+  const crxPath = path.join(RELEASE, `${base}.crx`);
+  const pemPath = path.join(RELEASE, 'extension.pem');
+  mkdirSync(RELEASE, { recursive: true });
+  rmSync(crxPath, { force: true });
 
-  console.log(`📦 Packaging ${base}\n`);
-
-  // -------------------------------------------------------------------------
-  // Step 1/2: ZIP — clean extension + install guide at the root
-  // -------------------------------------------------------------------------
-  console.log('[pack] Step 1/2: ZIP (unpacked extension + install guide)...');
-  execFileSync('python3', ['-c', PY_MAKE_ZIP, staged, path.join(work, GUIDE_NAME), GUIDE_NAME, zipPath], {
-    stdio: 'inherit',
-  });
-
-  // -------------------------------------------------------------------------
-  // Step 2/2: CRX3 — signed, pure extension (no guide); key persisted for a
-  // stable extension ID so future versions upgrade in place.
-  // -------------------------------------------------------------------------
-  console.log('[pack] Step 2/2: CRX3 (signed, stable key)...');
-  execFileSync('crx3', ['-o', crxPath, '-p', pemPath, path.join(staged, 'manifest.json')], {
-    stdio: 'inherit',
-  });
-} finally {
-  rmSync(staged, { recursive: true, force: true });
-  rmSync(work, { recursive: true, force: true });
+  const staged = stageClean(DIST);
+  const guide = writeGuideFile(INSTALL_GUIDE_CHROME);
+  try {
+    console.log('📦 Packaging Chrome\n');
+    console.log('[pack:chrome] ZIP (unpacked extension + install guide)...');
+    makeZip(staged, guide, zipPath);
+    console.log('[pack:chrome] CRX3 (signed, stable key)...');
+    execFileSync('crx3', ['-o', crxPath, '-p', pemPath, path.join(staged, 'manifest.json')], {
+      stdio: 'inherit',
+    });
+  } finally {
+    rmSync(staged, { recursive: true, force: true });
+    rmSync(path.dirname(guide), { recursive: true, force: true });
+  }
+  return { zipPath, crxPath, pemPath };
 }
 
 // ---------------------------------------------------------------------------
-// Done
+// Firefox: unpacked ZIP only. No CRX/XPI — an unsigned Firefox extension can
+// only load temporarily via about:debugging (see the install guide); producing
+// an installable .xpi would require AMO signing, out of scope here.
 // ---------------------------------------------------------------------------
+function packFirefox() {
+  const DIST = path.join(ROOT, 'dist-firefox');
+  if (!existsSync(path.join(DIST, 'manifest.json'))) {
+    console.error('✗ dist-firefox/manifest.json not found — run `npm run build:firefox` first.');
+    process.exit(1);
+  }
+  requireBin('python3');
+
+  const zipPath = path.join(RELEASE, `${pkg.name}-firefox-${pkg.version}.zip`);
+  mkdirSync(RELEASE, { recursive: true });
+
+  const staged = stageClean(DIST);
+  const guide = writeGuideFile(INSTALL_GUIDE_FIREFOX);
+  try {
+    console.log('📦 Packaging Firefox\n');
+    console.log('[pack:firefox] ZIP (unpacked extension + install guide)...');
+    makeZip(staged, guide, zipPath);
+  } finally {
+    rmSync(staged, { recursive: true, force: true });
+    rmSync(path.dirname(guide), { recursive: true, force: true });
+  }
+  return { zipPath };
+}
+
+// ---------------------------------------------------------------------------
+// Main
+// ---------------------------------------------------------------------------
+const target = process.argv[2] || 'chrome';
+if (!['chrome', 'firefox', 'all'].includes(target)) {
+  console.error(`✗ Unknown target '${target}'. Use: chrome | firefox | all`);
+  process.exit(1);
+}
+
+const results = [];
+if (target === 'chrome' || target === 'all') results.push(packChrome());
+if (target === 'firefox' || target === 'all') results.push(packFirefox());
+
 const rel = (p) => path.relative(ROOT, p);
 console.log('\n✓ Packaging complete:');
-console.log(`  ${rel(zipPath)}   ← send this to friends`);
-console.log(`  ${rel(crxPath)}   ← for Chromium browsers that allow local .crx`);
-console.log(`  ${rel(pemPath)}   ← signing key (KEEP PRIVATE, never commit)`);
+for (const { zipPath, crxPath, pemPath } of results) {
+  console.log(`  ${rel(zipPath)}   ← send this to friends`);
+  if (crxPath) console.log(`  ${rel(crxPath)}   ← for Chromium browsers that allow local .crx`);
+  if (pemPath) console.log(`  ${rel(pemPath)}   ← signing key (KEEP PRIVATE, never commit)`);
+}
