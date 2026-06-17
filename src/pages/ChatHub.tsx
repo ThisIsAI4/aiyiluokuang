@@ -23,6 +23,7 @@ import { ContextPreviewChip } from '../components/ContextPreviewChip';
 import { ChainModeBar } from '../components/ChainModeBar';
 import { AnswerHarvestButton } from '../components/AnswerHarvestButton';
 import { chainStore, bindPanelRegistry } from '../services/chainStore';
+import { resolveArrowRightFill } from './placeholderFill';
 
 declare global {
   interface Window { __SCH_WINDOW__?: Window; }
@@ -149,6 +150,25 @@ export default function ChatHubPage() {
     if (mode === 'cmdOrCtrlEnter' && ev.key === 'Enter' && cmd && !ev.nativeEvent.isComposing) {
       ev.preventDefault();
       handleSubmit();
+    }
+
+    // → on an empty input fills the placeholder text (last sent, else the default hint).
+    const fill = resolveArrowRightFill({
+      key: ev.key,
+      text,
+      lastSent,
+      historyOpen,
+      defaultPlaceholder: t('app.inputPlaceholder'),
+    });
+    if (fill !== null) {
+      ev.preventDefault();
+      setText(fill);
+      // Move the caret to the end once the controlled value has flushed.
+      requestAnimationFrame(() => {
+        const ta = inputRef.current?.resizableTextArea?.textArea as HTMLTextAreaElement | undefined;
+        ta?.focus();
+        ta?.setSelectionRange(fill.length, fill.length);
+      });
     }
 
     // Skip ↑/↓ inline navigation while popup is open (popup owns the keys)
