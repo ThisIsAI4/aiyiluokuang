@@ -1,6 +1,8 @@
 # ChatHub Replica
 
-A full-functional MV3 replica of [Simple Chat Hub](https://chathub.aipilot.cc/). Aggregates 30 mainstream AI chat platforms into one panel for synchronous multi-platform chat.
+> **Languages:** English | [简体中文](./README.zh-CN.md)
+
+A fully functional MV3 replica of [Simple Chat Hub](https://chathub.aipilot.cc/). It aggregates 30 mainstream AI chat platforms into one panel for synchronous multi-platform chat.
 
 ## What's included
 
@@ -9,7 +11,7 @@ A full-functional MV3 replica of [Simple Chat Hub](https://chathub.aipilot.cc/).
 - **`declarativeNetRequest`** dynamically strips `X-Frame-Options` and `Content-Security-Policy` so AI platforms can be iframed.
 - **Two content scripts** per platform:
   - `priority.js` (MAIN world, `document_start`): kills page focus-stealing, removes `autofocus`, forwards keyboard shortcuts to the parent. Pre-bundled by `scripts/build-priority.mjs` as a self-contained IIFE.
-  - `main.ts` (ISOLATED world, `document_idle`): receives `sendText` from the parent, runs declarative actions, fills the input, clicks the send button, coordinates long-screenshot scrolling.
+  - `main.ts` (ISOLATED world, `document_idle`): receives `sendText` from the parent, runs declarative actions, fills the input, clicks the send button, and coordinates long-screenshot scrolling.
 - **PostMessage RPC** between the extension UI and content scripts (`{source: "chathub-replica", type, action, id, data}`).
 - **30 built-in platforms** (16 international + 14 Chinese), each with optional `inputSelector`, `sendButtonSelector`, `inputMethod`, declarative `inputActions`/`sendActions`/`readyActions`/`newChatActions`, `scrollContainerSelector`, and `networkRules`.
 
@@ -18,7 +20,7 @@ A full-functional MV3 replica of [Simple Chat Hub](https://chathub.aipilot.cc/).
 - Layout presets (named layouts of selected platforms)
 - Configurable column count
 - Per-platform reload, full-screen, new chat
-- **Single + long screenshot** (heuristic scroll-container detection, fixed-element hiding, multi-iframe canvas stitching)
+- **Single & long screenshot** (heuristic scroll-container detection, fixed-element hiding, multi-iframe canvas stitching)
 - **Prompt Library** (CRUD persistent prompts)
 - **Custom Platforms** (add/edit your own URLs with selectors and advanced JSON config)
 - **Configurable keyboard shortcuts** for 9 actions:
@@ -30,7 +32,7 @@ A full-functional MV3 replica of [Simple Chat Hub](https://chathub.aipilot.cc/).
 - Send-key mode: Enter or ⌘/Ctrl+Enter
 - Per-platform tweaks (e.g. Grok OneTrust consent auto-dismiss)
 
-### Comparing to the original
+### Compared to the original
 | | Original Simple Chat Hub 2.4.0 | This Replica |
 |---|---|---|
 | Manifest | MV3 + dynamic rules + dynamic scripting | ✅ Same |
