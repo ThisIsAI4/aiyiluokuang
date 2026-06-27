@@ -57,6 +57,26 @@ export function resolveSelector(ref: SelectorRef | undefined): Element | null {
   return document.querySelector(ref.selector);
 }
 
+/** Multi-match version of `resolveSelector`. Used by chain harvest to pick the
+ * latest of several answer nodes. Returns visible-order DOM matches. */
+export function resolveAll(ref: SelectorRef): Element[] {
+  if (!ref) return [];
+  if (typeof ref === 'string') return ref ? Array.from(document.querySelectorAll(ref)) : [];
+  if (Array.isArray(ref)) {
+    for (const sel of ref) {
+      const hits = Array.from(document.querySelectorAll(sel));
+      if (hits.length) return hits;
+    }
+    return [];
+  }
+  if (ref.inShadowDom) {
+    const root = ref.shadowRootSelector ? document.querySelector(ref.shadowRootSelector) : undefined;
+    const one = findInShadow(ref.selector, root || undefined);
+    return one ? [one] : [];
+  }
+  return Array.from(document.querySelectorAll(ref.selector));
+}
+
 const FALLBACK_INPUT_SELECTORS = ['div[contenteditable="true"]', 'div[contenteditable=""]', 'div[contenteditable]', 'textarea'];
 
 function getAllElementsIncludingShadow(root: Element | ShadowRoot = document.body): Element[] {

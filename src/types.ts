@@ -54,6 +54,9 @@ export interface ChatAppConfig {
   url: string;
   inputSelector?: SelectorRef;
   sendButtonSelector?: SelectorRef;
+  // CSS selector(s) for the platform's latest assistant answer. Used by chain
+  // harvest when the user has not selected text. Last visible match wins.
+  answerSelector?: SelectorRef;
   inputMethod?: InputMethod;
   firefoxInputMethod?: InputMethod;
   inputActions?: ChatAction[];
