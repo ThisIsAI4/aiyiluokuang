@@ -33,6 +33,7 @@ export const BUILTIN_CHAT_APPS: ChatAppConfig[] = [
   },
   { id: 'You', url: 'https://you.com/' },
   { id: 'ChatGPT', url: 'https://chatgpt.com/', inputSelector: '#prompt-textarea',
+    answerSelector: '[data-message-author-role="assistant"]:last-of-type .markdown, [data-message-author-role="assistant"]',
     // Goal: web search on. "Search" lives in the composer tools; Thinking is model-driven.
     readyActions: [
       { type: 'ensureToggleOn', params: { buttonText: ['Search', 'Search the web', '搜索'] } },
@@ -41,6 +42,7 @@ export const BUILTIN_CHAT_APPS: ChatAppConfig[] = [
   {
     id: 'Claude',
     url: 'https://claude.ai/',
+    answerSelector: '.font-claude-message, [data-testid="bot-message"]',
     // Goal: web search + extended thinking on. Both are user toggles in claude.ai.
     readyActions: [
       { type: 'ensureToggleOn', params: { buttonText: ['Web search', '网络搜索', '联网搜索'] } },
@@ -59,12 +61,14 @@ export const BUILTIN_CHAT_APPS: ChatAppConfig[] = [
     sendButtonSelector: "[data-id='send-button']",
   },
   { id: 'Gemini', url: 'https://gemini.google.com/app',
+    answerSelector: 'message-content, .model-response-text',
     // Goal: strongest reasoning. "Thinking"/"Deep Think" selected via the model/prompt bar; best-effort.
     readyActions: [
       { type: 'ensureToggleOn', params: { buttonText: ['Deep Think', 'Thinking', '深度思考'] } },
     ],
   },
   { id: 'Grok', url: 'https://grok.com/',
+    answerSelector: '[data-testid="message-bot"], .markdown',
     // Goal: web search + reasoning. Grok exposes "DeepSearch" and "Think" buttons.
     readyActions: [
       { type: 'ensureToggleOn', params: { buttonText: ['Think', '思考'] } },
@@ -97,6 +101,7 @@ export const BUILTIN_CHAT_APPS: ChatAppConfig[] = [
     ],
   },
   { id: 'DeepSeek', url: 'https://chat.deepseek.com/', inputSelector: 'textarea', inputMethod: 'input',
+    answerSelector: '.ds-markdown, .markdown',
     // Goal: "Expert"-level answers + tools. DeepSeek has no literal "Expert" mode in the
     // chat UI; the strongest setting is DeepThink (reasoning) + web search both on.
     readyActions: [
@@ -120,6 +125,7 @@ export const BUILTIN_CHAT_APPS: ChatAppConfig[] = [
     ],
   },
   { id: 'Kimi', url: 'https://www.kimi.com/', inputSelector: '.chat-input-editor', inputMethod: 'paste',
+    answerSelector: '.chat-content-item, .markdown',
     // Kimi uses 长思考 (not 深度思考) and 联网, inside the 工具箱.
     readyActions: [
       { type: 'ensureToggleOn', params: { buttonText: ['长思考', '深度思考', 'Long Thinking'] } },
