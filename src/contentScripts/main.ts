@@ -14,6 +14,7 @@ import {
   wait,
 } from '../utils/dom';
 import { detectScrollContainer, getAllElementsIncludingShadow, getOffsetParent, getRectInfo } from '../utils/screenshot';
+import { harvestAnswer } from './harvestAnswer';
 import { AppErrorType } from '../utils/constants';
 import type { ChatAppConfig } from '../types';
 
@@ -224,8 +225,10 @@ if (isInExtensionFrame()) {
         return null;
       case 'getLocationHref':
         return window.location.href;
+      // "harvestSelection" now auto-falls-back to the latest answer when nothing
+      // is selected — selection is honored first as an override. See harvestAnswer.
       case 'harvestSelection': {
-        const text = window.getSelection()?.toString() ?? '';
+        const text = harvestAnswer(config);
         return { text };
       }
       case 'captureStart':
