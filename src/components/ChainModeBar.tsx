@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Switch, Button, Tag, Space, message } from 'antd';
+import { Switch, Button, Tag, Space, message, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { PlayCircleOutlined, RightOutlined, RedoOutlined, StopOutlined, EditOutlined } from '@ant-design/icons';
 import { useStore } from 'zustand';
@@ -19,6 +19,8 @@ export function ChainModeBar({ inputValue, onStartChain }: Props) {
   const chainMode = useAppStore(s => s.chainMode);
   const setChainMode = useAppStore(s => s.setChainMode);
   const chain = useStore(chainStore);
+  const chainAutoAdvance = useAppStore(s => s.options.chainAutoAdvance);
+  const updateOptions = useAppStore(s => s.updateOptions);
   const [editorOpen, setEditorOpen] = useState(false);
 
   const platformNames = chain.steps.map(s => PLATFORM_DISPLAY[s.platformId]?.name ?? s.platformId);
@@ -54,6 +56,15 @@ export function ChainModeBar({ inputValue, onStartChain }: Props) {
       <Switch checked={chainMode} onChange={setChainMode} checkedChildren={t('chain.toggle')} unCheckedChildren={t('chain.toggle')} />
       {chainMode && (
         <>
+          <Tooltip title={t('chain.autoAdvanceHint')}>
+            <Switch
+              size="small"
+              checked={chainAutoAdvance}
+              onChange={v => updateOptions({ chainAutoAdvance: v })}
+              checkedChildren={t('chain.autoAdvance')}
+              unCheckedChildren={t('chain.autoAdvance')}
+            />
+          </Tooltip>
           {platformNames.length > 0
             ? <span className="chain-platforms">{platformNames.join(' → ')}</span>
             : <span className="chain-platforms" style={{ opacity: 0.6 }}>({t('chain.statusIdle')})</span>}

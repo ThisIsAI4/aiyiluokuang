@@ -125,6 +125,11 @@ export default {
     needSteps: 'Configure the chain order first in "Edit chain".',
     needPrompt: 'Type an initial prompt first.',
     sendAll: 'Send to all',
+    autoAdvance: 'Auto-advance',
+    autoAdvanceHint: 'Proceed automatically once the answer stops changing',
+    statusRunning: 'Running…',
+    statusAutoRunning: 'Step {current}/{total} — waiting for answer…',
+    statusWaitingManual: 'Step {current}/{total} — click Next to pass it on',
   },
   extractor: {
     failed: 'Extraction failed',

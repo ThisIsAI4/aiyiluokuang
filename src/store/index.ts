@@ -15,6 +15,7 @@ const DEFAULT_OPTIONS: AppOptions = {
   themeMode: ThemeMode.System,
   language: Language.System,
   primaryColor: '#00d992',
+  chainAutoAdvance: false,
 };
 
 interface AppStore {

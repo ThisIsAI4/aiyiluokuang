@@ -91,6 +91,7 @@ export interface AppOptions {
   themeMode: ThemeMode;
   language: Language;
   primaryColor: string;
+  chainAutoAdvance: boolean;
 }
 
 export interface PromptItem {

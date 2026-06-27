@@ -121,6 +121,11 @@ export default {
     needSteps: '请先在「编辑链」里配置链顺序',
     needPrompt: '请先输入起始 prompt',
     sendAll: '全部发送',
+    autoAdvance: '自动推进',
+    autoAdvanceHint: '检测到回答稳定后自动进入下一步',
+    statusRunning: '运行中…',
+    statusAutoRunning: '步骤 {current}/{total} — 等待回答完成…',
+    statusWaitingManual: '步骤 {current}/{total} — 点下一步传递',
   },
   extractor: {
     failed: '内容提取失败',
