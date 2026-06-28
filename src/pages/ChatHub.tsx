@@ -88,6 +88,9 @@ export default function ChatHubPage() {
       platformName(platformId) {
         return bundle?.chatApps.find(a => a.id === platformId)?.id ?? platformId;
       },
+      isAutoAdvance() {
+        return useAppStore.getState().options.chainAutoAdvance;
+      },
     });
   }, [bundle]);
 

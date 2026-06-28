@@ -8,6 +8,7 @@ type PanelHandle = {
 type PanelRegistry = {
   resolve(platformId: string): PanelHandle | null;
   platformName(platformId: string): string;
+  isAutoAdvance(): boolean;
 };
 
 let registry: PanelRegistry | null = null;
@@ -29,6 +30,9 @@ const dispatcher: ChainDispatcher = {
   },
   platformName(platformId) {
     return registry?.platformName(platformId) ?? platformId;
+  },
+  isAutoAdvance() {
+    return registry?.isAutoAdvance() ?? false;
   },
 };
 
