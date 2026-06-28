@@ -28,7 +28,10 @@ export function ChainModeBar({ inputValue, onStartChain }: Props) {
   const statusBadge = (() => {
     switch (chain.status) {
       case 'idle': return <Tag className="status-badge-idle">{t('chain.statusIdle')}</Tag>;
-      case 'waiting_user': return <Tag className="status-badge-waiting">{t('chain.statusWaiting', { current: chain.currentStep + 1, total: chain.steps.length })}</Tag>;
+      case 'waiting_user':
+        return chainAutoAdvance
+          ? <Tag className="status-badge-running">{t('chain.statusAutoRunning', { current: chain.currentStep + 1, total: chain.steps.length })}</Tag>
+          : <Tag className="status-badge-waiting">{t('chain.statusWaitingManual', { current: chain.currentStep + 1, total: chain.steps.length })}</Tag>;
       case 'running': return <Tag className="status-badge-running">{t('chain.statusRunning')}</Tag>;
       case 'done': return <Tag className="status-badge-done">{t('chain.statusDone')}</Tag>;
       case 'aborted': return <Tag className="status-badge-aborted">{t('chain.statusAborted')}</Tag>;
