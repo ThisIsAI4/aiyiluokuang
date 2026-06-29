@@ -114,7 +114,7 @@ export function createChainStore(dispatcher: ChainDispatcher): StoreApi<ChainSta
         const firstStep = state.steps[0];
         try {
           await dispatcher.sendToPlatform(firstStep.platformId, state.originalPrompt);
-          void maybeAutoAdvance();
+          void maybeAutoAdvance().catch(err => set({ lastError: err instanceof Error ? err.message : String(err) }));
         } catch (err) {
           set({ lastError: err instanceof Error ? err.message : String(err) });
         }
@@ -184,7 +184,7 @@ export function createChainStore(dispatcher: ChainDispatcher): StoreApi<ChainSta
             lastError: null,
             _busy: false,
           });
-          void maybeAutoAdvance();
+          void maybeAutoAdvance().catch(err => set({ lastError: err instanceof Error ? err.message : String(err) }));
         } catch (err) {
           set({
             lastError: err instanceof Error ? err.message : String(err),
